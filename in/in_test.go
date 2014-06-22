@@ -77,7 +77,8 @@ var _ = Describe("In", func() {
 			err = json.NewDecoder(input).Decode(&requested)
 			Ω(err).ShouldNot(HaveOccurred())
 
-			Ω(requested).Should(Equal(request))
+			Ω(requested.Version.Time.Unix()).Should(Equal(request.Version.Time.Unix()))
+			Ω(requested.Source).Should(Equal(request.Source))
 		})
 	})
 })
