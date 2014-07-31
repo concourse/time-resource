@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/concourse/time-resource/models"
 )
@@ -38,10 +37,10 @@ func main() {
 	}
 
 	json.NewEncoder(os.Stdout).Encode(models.InResponse{
-		Version: models.Version{Time: time.Now()},
+		Version: request.Version,
 		Metadata: models.Metadata{
 			{"interval", request.Source.Interval},
-			{"now", time.Now().String()},
+			{"now", request.Version.Time.String()},
 		},
 	})
 }
