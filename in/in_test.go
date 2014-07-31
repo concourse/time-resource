@@ -65,8 +65,8 @@ var _ = Describe("In", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 		})
 
-		It("reports the current time as metadata", func() {
-			Ω(response.Version.Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+		It("reports the version's time as the version", func() {
+			Ω(response.Version.Time.UnixNano()).Should(Equal(request.Version.Time.UnixNano()))
 		})
 
 		It("writes the requested version and source to the destination", func() {
@@ -79,6 +79,16 @@ var _ = Describe("In", func() {
 
 			Ω(requested.Version.Time.Unix()).Should(Equal(request.Version.Time.Unix()))
 			Ω(requested.Source).Should(Equal(request.Source))
+		})
+
+		Context("when the request has no time in its version", func() {
+			BeforeEach(func() {
+				request.Version = models.Version{}
+			})
+
+			It("reports the current time as the version", func() {
+				Ω(response.Version.Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+			})
 		})
 	})
 })

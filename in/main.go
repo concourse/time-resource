@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/concourse/time-resource/models"
 )
@@ -36,11 +37,19 @@ func main() {
 		fatal("reading request", err)
 	}
 
+	versionTime := request.Version.Time
+	if versionTime.IsZero() {
+		versionTime = time.Now()
+	}
+
+	inVersion := request.Version
+	inVersion.Time = versionTime
+
 	json.NewEncoder(os.Stdout).Encode(models.InResponse{
-		Version: request.Version,
+		Version: inVersion,
 		Metadata: models.Metadata{
 			{"interval", request.Source.Interval},
-			{"now", request.Version.Time.String()},
+			{"time", versionTime.String()},
 		},
 	})
 }
