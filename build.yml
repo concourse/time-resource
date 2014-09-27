@@ -1,5 +1,8 @@
 ---
-image: docker:///mischief/docker-golang
+image: docker:///concourse/static-golang
+
+paths:
+  time-resource: gopath/src/github.com/concourse/time-resource
 
 run:
-  path: time-resource/scripts/test
+  path: gopath/src/github.com/concourse/time-resource/scripts/test
