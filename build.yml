@@ -1,8 +1,9 @@
 ---
 image: docker:///concourse/static-golang
 
-paths:
-  time-resource: gopath/src/github.com/concourse/time-resource
+inputs:
+  - name: time-resource
+    path: gopath/src/github.com/concourse/time-resource
 
 run:
   path: gopath/src/github.com/concourse/time-resource/scripts/test
