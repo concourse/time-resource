@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"time"
 
@@ -15,19 +16,19 @@ func main() {
 
 	err := json.NewDecoder(os.Stdin).Decode(&request)
 	if err != nil {
-		println("error decoding payload: " + err.Error())
+		fmt.Fprintln(os.Stderr, "error decoding payload: "+err.Error())
 		os.Exit(1)
 	}
 
-	duration, err := time.ParseDuration(request.Source.Interval)
+	interval, err := time.ParseDuration(request.Source.Interval)
 	if err != nil {
-		println("invalid interval: " + request.Source.Interval + "; " + err.Error())
+		fmt.Fprintln(os.Stderr, "invalid interval: "+request.Source.Interval+"; "+err.Error())
 		os.Exit(1)
 	}
 
 	versions := []models.Version{}
 
-	if now.Sub(request.Version.Time) > duration {
+	if now.Sub(request.Version.Time) > interval {
 		versions = append(versions, models.Version{Time: now})
 	}
 
