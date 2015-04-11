@@ -88,10 +88,14 @@ func main() {
 			if lastCheckedAt.IsZero() {
 				incrementVersion = true
 			} else {
-				// This means we have a config that runs once within a given time range
+				// This means we have a config that runs once within a given time range.
 				// In that case, we set our interval to be the max time from that range
-				// so it only runs once
+				// so it only runs once.
 				if interval == "" {
+					if startTime.After(stopTime) {
+						stopTime = stopTime.Add(24 * time.Hour)
+					}
+
 					interval = stopTime.Sub(startTime).String()
 				}
 			}
