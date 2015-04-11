@@ -1,23 +1,52 @@
 package testsuite
 
 import (
-	"crypto/md5"
-	"github.com/onsi/ginkgo/ginkgo/support/fsnotify"
+	"errors"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 type TestSuite struct {
 	Path        string
 	PackageName string
 	IsGinkgo    bool
+	Precompiled bool
 }
 
-func SuitesInDir(dir string, recurse bool) []*TestSuite {
-	suites := []*TestSuite{}
+func PrecompiledTestSuite(path string) (TestSuite, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return TestSuite{}, err
+	}
+
+	if info.IsDir() {
+		return TestSuite{}, errors.New("this is a directory, not a file")
+	}
+
+	if filepath.Ext(path) != ".test" {
+		return TestSuite{}, errors.New("this is not a .test binary")
+	}
+
+	if info.Mode()&0111 == 0 {
+		return TestSuite{}, errors.New("this is not executable")
+	}
+
+	dir := relPath(filepath.Dir(path))
+	packageName := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+
+	return TestSuite{
+		Path:        dir,
+		PackageName: packageName,
+		IsGinkgo:    true,
+		Precompiled: true,
+	}, nil
+}
+
+func SuitesInDir(dir string, recurse bool) []TestSuite {
+	suites := []TestSuite{}
 	files, _ := ioutil.ReadDir(dir)
 	re := regexp.MustCompile(`_test\.go$`)
 	for _, file := range files {
@@ -39,14 +68,17 @@ func SuitesInDir(dir string, recurse bool) []*TestSuite {
 	return suites
 }
 
-func New(dir string, files []os.FileInfo) *TestSuite {
+func relPath(dir string) string {
 	dir, _ = filepath.Abs(dir)
 	cwd, _ := os.Getwd()
 	dir, _ = filepath.Rel(cwd, filepath.Clean(dir))
 	dir = "." + string(filepath.Separator) + dir
+	return dir
+}
 
-	return &TestSuite{
-		Path:        dir,
+func New(dir string, files []os.FileInfo) TestSuite {
+	return TestSuite{
+		Path:        relPath(dir),
 		PackageName: packageNameForSuite(dir),
 		IsGinkgo:    filesHaveGinkgoSuite(dir, files),
 	}
@@ -71,60 +103,4 @@ func filesHaveGinkgoSuite(dir string, files []os.FileInfo) bool {
 	}
 
 	return false
-}
-
-func (suite *TestSuite) md5() [16]byte {
-	files, _ := ioutil.ReadDir(suite.Path)
-	re := regexp.MustCompile(`\.go$`)
-	data := []byte{}
-
-	for _, file := range files {
-		if !file.IsDir() && re.Match([]byte(file.Name())) {
-			data = append(data, []byte(file.Name())...)
-			fileData, err := ioutil.ReadFile(filepath.Join(suite.Path, file.Name()))
-			if err == nil {
-				data = append(data, fileData...)
-			}
-		}
-	}
-
-	return md5.Sum(data)
-}
-
-func (suite *TestSuite) Watch(notificationChannel chan *TestSuite) {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	re := regexp.MustCompile(`\.go$`)
-
-	notified := false
-	notifiedChannel := make(chan bool)
-	hash := suite.md5()
-
-	go func() {
-		for {
-			select {
-			case ev := <-watcher.Event:
-				if re.Match([]byte(ev.Name)) && !notified && suite.md5() != hash {
-					notified = true
-					go func() {
-						notificationChannel <- suite
-						notifiedChannel <- true
-					}()
-				}
-			case err := <-watcher.Error:
-				log.Println("error:", err)
-			case <-notifiedChannel:
-				hash = suite.md5()
-				notified = false
-			}
-		}
-	}()
-
-	err = watcher.Watch(suite.Path)
-	if err != nil {
-		log.Fatal(err)
-	}
 }

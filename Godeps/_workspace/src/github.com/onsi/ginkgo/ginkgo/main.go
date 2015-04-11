@@ -99,6 +99,14 @@ or
 
 	ginkgo blur
 
+To compile a test suite:
+
+	ginkgo build <path-to-package>
+
+will output an executable file named `package.test`.  This can be run directly or by invoking
+
+	ginkgo <path-to-package.test>
+
 To print out Ginkgo's version:
 
 	ginkgo version
@@ -114,12 +122,16 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/ginkgo/testsuite"
 )
+
+const greenColor = "\x1b[32m"
+const redColor = "\x1b[91m"
+const defaultStyle = "\x1b[0m"
+const lightGrayColor = "\x1b[37m"
 
 type Command struct {
 	Name                      string
@@ -147,6 +159,7 @@ var Commands []*Command
 func init() {
 	DefaultCommand = BuildRunCommand()
 	Commands = append(Commands, BuildWatchCommand())
+	Commands = append(Commands, BuildBuildCommand())
 	Commands = append(Commands, BuildBootstrapCommand())
 	Commands = append(Commands, BuildGenerateCommand())
 	Commands = append(Commands, BuildNodotCommand())
@@ -221,39 +234,46 @@ func complainAndQuit(complaint string) {
 	os.Exit(1)
 }
 
-func findSuites(args []string, recurse bool, skipPackage string) []*testsuite.TestSuite {
-	suites := []*testsuite.TestSuite{}
+func findSuites(args []string, recurse bool, skipPackage string, allowPrecompiled bool) ([]testsuite.TestSuite, []string) {
+	suites := []testsuite.TestSuite{}
 
 	if len(args) > 0 {
 		for _, arg := range args {
+			if allowPrecompiled {
+				suite, err := testsuite.PrecompiledTestSuite(arg)
+				if err == nil {
+					suites = append(suites, suite)
+					continue
+				}
+			}
 			suites = append(suites, testsuite.SuitesInDir(arg, recurse)...)
 		}
 	} else {
 		suites = testsuite.SuitesInDir(".", recurse)
 	}
 
+	skippedPackages := []string{}
 	if skipPackage != "" {
-		re := regexp.MustCompile(skipPackage)
-		filteredSuites := []*testsuite.TestSuite{}
-		skippedPackages := []string{}
+		skipFilters := strings.Split(skipPackage, ",")
+		filteredSuites := []testsuite.TestSuite{}
 		for _, suite := range suites {
-			if re.Match([]byte(suite.PackageName)) {
-				skippedPackages = append(skippedPackages, suite.PackageName)
+			skip := false
+			for _, skipFilter := range skipFilters {
+				if strings.Contains(suite.Path, skipFilter) {
+					skip = true
+					break
+				}
+			}
+			if skip {
+				skippedPackages = append(skippedPackages, suite.Path)
 			} else {
 				filteredSuites = append(filteredSuites, suite)
 			}
 		}
-		if len(skippedPackages) > 0 {
-			fmt.Printf("Will skip %s\n", strings.Join(skippedPackages, ", "))
-		}
 		suites = filteredSuites
 	}
 
-	if len(suites) == 0 {
-		complainAndQuit("Found no test suites")
-	}
-
-	return suites
+	return suites, skippedPackages
 }
 
 func goFmt(path string) {
@@ -261,4 +281,11 @@ func goFmt(path string) {
 	if err != nil {
 		complainAndQuit("Could not fmt: " + err.Error())
 	}
+}
+
+func pluralizedWord(singular, plural string, count int) string {
+	if count == 1 {
+		return singular
+	}
+	return plural
 }
