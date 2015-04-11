@@ -211,6 +211,53 @@ var _ = Describe("Check", func() {
 							Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
 						})
 					})
+
+					Context("when an interval is specified", func() {
+						BeforeEach(func() {
+							request.Source.Interval = "1m"
+						})
+
+						Context("when no version is given", func() {
+							It("outputs a version containing the current time", func() {
+								Ω(response).Should(HaveLen(1))
+								Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+							})
+						})
+
+						Context("when a version is given", func() {
+							Context("with its time within the interval", func() {
+								BeforeEach(func() {
+									request.Version.Time = time.Now()
+								})
+
+								It("does not output any versions", func() {
+									Ω(response).Should(BeEmpty())
+								})
+							})
+
+							Context("with its time one interval ago", func() {
+								BeforeEach(func() {
+									request.Version.Time = time.Now().Add(-1 * time.Minute)
+								})
+
+								It("outputs a version containing the current time", func() {
+									Ω(response).Should(HaveLen(1))
+									Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+								})
+							})
+
+							Context("with its time N intervals ago", func() {
+								BeforeEach(func() {
+									request.Version.Time = time.Now().Add(-5 * time.Minute)
+								})
+
+								It("outputs a version containing the current time", func() {
+									Ω(response).Should(HaveLen(1))
+									Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+								})
+							})
+						})
+					})
 				})
 			})
 

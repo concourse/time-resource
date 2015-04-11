@@ -21,6 +21,9 @@ level of precision is better left to other tools.
     stop: 9:00 GMT
   ```
 
+These can be combined to emit a new version on an interval during a particular
+time period.
+
 ## Behavior
 
 ### `check`: Report the current time.

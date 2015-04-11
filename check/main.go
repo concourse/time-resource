@@ -65,6 +65,7 @@ func main() {
 	start := request.Source.Between.Start
 	stop := request.Source.Between.Stop
 	interval := request.Source.Interval
+	incrementVersion := false
 
 	lastCheckedAt := request.Version.Time.UTC()
 
@@ -85,26 +86,33 @@ func main() {
 
 		if between.Between(startTime, stopTime, currentTime) {
 			if lastCheckedAt.IsZero() {
-				versions = append(versions, models.Version{Time: currentTime})
+				incrementVersion = true
 			} else {
-				maxInterval := stopTime.Sub(startTime)
-
-				if currentTime.Sub(request.Version.Time) > maxInterval {
-					versions = append(versions, models.Version{Time: currentTime})
+				// This means we have a config that runs once within a given time range
+				// In that case, we set our interval to be the max time from that range
+				// so it only runs once
+				if interval == "" {
+					interval = stopTime.Sub(startTime).String()
 				}
 			}
 		}
+	}
 
-	} else if interval != "" {
+	if interval != "" {
 		parsedInterval, err := time.ParseDuration(interval)
+
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "invalid interval: "+interval+"; "+err.Error())
 			os.Exit(1)
 		}
 
 		if currentTime.Sub(request.Version.Time) > parsedInterval {
-			versions = append(versions, models.Version{Time: currentTime})
+			incrementVersion = true
 		}
+	}
+
+	if incrementVersion {
+		versions = append(versions, models.Version{Time: currentTime})
 	}
 
 	json.NewEncoder(os.Stdout).Encode(versions)
