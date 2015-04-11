@@ -62,8 +62,8 @@ func main() {
 	}
 
 	versions := []models.Version{}
-	start := request.Source.Between.Start
-	stop := request.Source.Between.Stop
+	start := request.Source.Start
+	stop := request.Source.Stop
 	interval := request.Source.Interval
 	incrementVersion := false
 

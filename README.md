@@ -11,14 +11,16 @@ level of precision is better left to other tools.
 ## Source Configuration
 
 * `interval`: *Optional.* The interval on which to report new versions.
-* `between`: *Optional.* Only create new time versions between this time range.
-  The supported formats for the times are: `3:04 PM MST`, `3PM MST`, `3 PM MST`,
-  `15:04 MST`, and `1504 MST`. Use the keys `start` and `stop`. e.g.
+
+* `start` and `stop`: *Optional.* Only create new time versions between this
+  time range. The supported formats for the times are: `3:04 PM MST`, `3PM
+  MST`, `3 PM MST`, `15:04 MST`, and `1504 MST`.
+
+  e.g.
 
   ```
-  between:
-    start: 8:00 GMT
-    stop: 9:00 GMT
+  start: 8:00 GMT
+  stop: 9:00 GMT
   ```
 
 These can be combined to emit a new version on an interval during a particular

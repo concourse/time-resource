@@ -76,8 +76,8 @@ var _ = Describe("Check", func() {
 
 		Context("with an invalid start", func() {
 			BeforeEach(func() {
-				request.Source.Between.Start = "not-a-time"
-				request.Source.Between.Stop = "3:04 PM MST"
+				request.Source.Start = "not-a-time"
+				request.Source.Stop = "3:04 PM MST"
 			})
 
 			It("returns an error", func() {
@@ -88,8 +88,8 @@ var _ = Describe("Check", func() {
 
 		Context("with an invalid stop", func() {
 			BeforeEach(func() {
-				request.Source.Between.Start = "3:04 PM MST"
-				request.Source.Between.Stop = "not-a-time"
+				request.Source.Start = "3:04 PM MST"
+				request.Source.Stop = "not-a-time"
 			})
 
 			It("returns an error", func() {
@@ -100,7 +100,7 @@ var _ = Describe("Check", func() {
 
 		Context("with a missing stop", func() {
 			BeforeEach(func() {
-				request.Source.Between.Start = "3:04 PM MST"
+				request.Source.Start = "3:04 PM MST"
 			})
 
 			It("returns an error", func() {
@@ -111,7 +111,7 @@ var _ = Describe("Check", func() {
 
 		Context("with a missing start", func() {
 			BeforeEach(func() {
-				request.Source.Between.Stop = "3:04 PM MST"
+				request.Source.Stop = "3:04 PM MST"
 			})
 
 			It("returns an error", func() {
@@ -166,10 +166,8 @@ var _ = Describe("Check", func() {
 					stop := now.Add(6 * time.Hour)
 					timeLayout := "3:04 PM MST"
 
-					request.Source.Between = models.TimeRange{
-						Start: start.Format(timeLayout),
-						Stop:  stop.Format(timeLayout),
-					}
+					request.Source.Start = start.Format(timeLayout)
+					request.Source.Stop = stop.Format(timeLayout)
 				})
 
 				Context("when no version is given", func() {
@@ -267,10 +265,8 @@ var _ = Describe("Check", func() {
 					stop := now.Add(7 * time.Hour)
 					timeLayout := "3:04 PM MST"
 
-					request.Source.Between = models.TimeRange{
-						Start: start.Format(timeLayout),
-						Stop:  stop.Format(timeLayout),
-					}
+					request.Source.Start = start.Format(timeLayout)
+					request.Source.Stop = stop.Format(timeLayout)
 				})
 
 				Context("when no version is given", func() {
