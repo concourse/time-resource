@@ -24,7 +24,13 @@ type CheckRequest struct {
 type CheckResponse []Version
 
 type Source struct {
-	Interval string `json:"interval"`
+	Interval string    `json:"interval"`
+	Between  TimeRange `json:"between"`
+}
+
+type TimeRange struct {
+	Start string `json:"start"`
+	Stop  string `json:"stop"`
 }
 
 type Metadata []MetadataField
