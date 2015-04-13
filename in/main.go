@@ -45,12 +45,25 @@ func main() {
 	inVersion := request.Version
 	inVersion.Time = versionTime
 
+	metadata := models.Metadata{
+		{"time", versionTime.String()},
+	}
+
+	if request.Source.Interval != "" {
+		metadata = append(metadata, models.MetadataField{"interval", request.Source.Interval})
+	}
+
+	if request.Source.Start != "" {
+		metadata = append(metadata, models.MetadataField{"start", request.Source.Start})
+	}
+
+	if request.Source.Stop != "" {
+		metadata = append(metadata, models.MetadataField{"stop", request.Source.Stop})
+	}
+
 	json.NewEncoder(os.Stdout).Encode(models.InResponse{
-		Version: inVersion,
-		Metadata: models.Metadata{
-			{"interval", request.Source.Interval},
-			{"time", versionTime.String()},
-		},
+		Version:  inVersion,
+		Metadata: metadata,
 	})
 }
 
