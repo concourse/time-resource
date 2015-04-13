@@ -276,6 +276,23 @@ var _ = Describe("Check", func() {
 						Ω(response).Should(BeEmpty())
 					})
 				})
+
+				Context("when an interval is given", func() {
+					BeforeEach(func() {
+						start := now.Add(6 * time.Hour)
+						stop := now.Add(7 * time.Hour)
+						timeLayout := "3:04 PM -0700"
+
+						request.Source.Start = start.Format(timeLayout)
+						request.Source.Stop = stop.Format(timeLayout)
+
+						request.Source.Interval = "1m"
+					})
+
+					It("does not output any versions", func() {
+						Ω(response).Should(BeEmpty())
+					})
+				})
 			})
 		})
 

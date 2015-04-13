@@ -51,6 +51,20 @@ func ParseTime(timeString string) (time.Time, error) {
 	return time.Time{}, errors.New("could not parse time")
 }
 
+func IntervalHasPassed(interval string, versionTime time.Time, currentTime time.Time) (bool, error) {
+	parsedInterval, err := time.ParseDuration(interval)
+
+	if err != nil {
+		return false, err
+	}
+
+	if currentTime.Sub(versionTime) > parsedInterval {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func main() {
 	currentTime := time.Now().UTC()
 	var request models.CheckRequest
@@ -98,19 +112,27 @@ func main() {
 
 					interval = stopTime.Sub(startTime).String()
 				}
+
+				intervalHasPassed, err := IntervalHasPassed(interval, request.Version.Time, currentTime)
+
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "invalid interval: "+interval+"; "+err.Error())
+					os.Exit(1)
+				}
+
+				if intervalHasPassed {
+					incrementVersion = true
+				}
 			}
 		}
-	}
-
-	if interval != "" {
-		parsedInterval, err := time.ParseDuration(interval)
-
+	} else if interval != "" {
+		intervalHasPassed, err := IntervalHasPassed(interval, request.Version.Time, currentTime)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "invalid interval: "+interval+"; "+err.Error())
 			os.Exit(1)
 		}
 
-		if currentTime.Sub(request.Version.Time) > parsedInterval {
+		if intervalHasPassed {
 			incrementVersion = true
 		}
 	}
