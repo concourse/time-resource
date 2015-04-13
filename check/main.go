@@ -14,11 +14,11 @@ import (
 var timeFormats []string
 
 func init() {
-	timeFormats = append(timeFormats, "3:04 PM MST")
-	timeFormats = append(timeFormats, "3PM MST")
-	timeFormats = append(timeFormats, "3 PM MST")
-	timeFormats = append(timeFormats, "15:04 MST")
-	timeFormats = append(timeFormats, "1504 MST")
+	timeFormats = append(timeFormats, "3:04 PM -0700")
+	timeFormats = append(timeFormats, "3PM -0700")
+	timeFormats = append(timeFormats, "3 PM -0700")
+	timeFormats = append(timeFormats, "15:04 -0700")
+	timeFormats = append(timeFormats, "1504 -0700")
 }
 
 func validateConfig(start string, stop string, interval string) {

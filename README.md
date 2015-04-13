@@ -13,14 +13,14 @@ level of precision is better left to other tools.
 * `interval`: *Optional.* The interval on which to report new versions.
 
 * `start` and `stop`: *Optional.* Only create new time versions between this
-  time range. The supported formats for the times are: `3:04 PM MST`, `3PM
-  MST`, `3 PM MST`, `15:04 MST`, and `1504 MST`.
+  time range. The supported formats for the times are: `3:04 PM -0800`, `3PM
+  -0800`, `3 PM -0800`, `15:04 -0800`, and `1504 -0800`.
 
   e.g.
 
   ```
-  start: 8:00 GMT
-  stop: 9:00 GMT
+  start: 8:00 +0100
+  stop: 9:00 +0100
   ```
 
 These can be combined to emit a new version on an interval during a particular

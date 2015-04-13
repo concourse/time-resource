@@ -20,14 +20,14 @@ var _ = Describe("Check", func() {
 
 	Describe("ParseTime", func() {
 		It("can parse many formats", func() {
-			expectedTime := time.Date(0, 1, 1, 13, 0, 0, 0, time.UTC)
+			expectedTime := time.Date(0, 1, 1, 21, 0, 0, 0, time.UTC)
 
 			formats := []string{
-				"1:00 PM UTC",
-				"1PM UTC",
-				"1 PM UTC",
-				"13:00 UTC",
-				"1300 UTC",
+				"1:00 PM -0800",
+				"1PM -0800",
+				"1 PM -0800",
+				"13:00 -0800",
+				"1300 -0800",
 			}
 
 			for _, format := range formats {
@@ -77,7 +77,7 @@ var _ = Describe("Check", func() {
 		Context("with an invalid start", func() {
 			BeforeEach(func() {
 				request.Source.Start = "not-a-time"
-				request.Source.Stop = "3:04 PM MST"
+				request.Source.Stop = "3:04 PM -0700"
 			})
 
 			It("returns an error", func() {
@@ -88,7 +88,7 @@ var _ = Describe("Check", func() {
 
 		Context("with an invalid stop", func() {
 			BeforeEach(func() {
-				request.Source.Start = "3:04 PM MST"
+				request.Source.Start = "3:04 PM -0700"
 				request.Source.Stop = "not-a-time"
 			})
 
@@ -100,7 +100,7 @@ var _ = Describe("Check", func() {
 
 		Context("with a missing stop", func() {
 			BeforeEach(func() {
-				request.Source.Start = "3:04 PM MST"
+				request.Source.Start = "3:04 PM -0700"
 			})
 
 			It("returns an error", func() {
@@ -111,7 +111,7 @@ var _ = Describe("Check", func() {
 
 		Context("with a missing start", func() {
 			BeforeEach(func() {
-				request.Source.Stop = "3:04 PM MST"
+				request.Source.Stop = "3:04 PM -0700"
 			})
 
 			It("returns an error", func() {
@@ -162,12 +162,14 @@ var _ = Describe("Check", func() {
 
 			Context("when we are in the specified time range", func() {
 				BeforeEach(func() {
-					start := now.Add(-6 * time.Hour)
-					stop := now.Add(6 * time.Hour)
-					timeLayout := "3:04 PM MST"
+					location, _ := time.LoadLocation("Pacific/Honolulu")
+					start := now.In(location).Add(-1 * time.Hour)
+					stop := now.In(location).Add(1 * time.Hour)
+					timeLayout := "3:04 PM -0700"
 
 					request.Source.Start = start.Format(timeLayout)
 					request.Source.Stop = stop.Format(timeLayout)
+
 				})
 
 				Context("when no version is given", func() {
@@ -180,7 +182,7 @@ var _ = Describe("Check", func() {
 				Context("when a version is given", func() {
 					Context("when the resource has already triggered with in the current time range", func() {
 						BeforeEach(func() {
-							request.Version.Time = now.Add(-6 * time.Hour)
+							request.Version.Time = now.Add(-30 * time.Minute)
 						})
 
 						It("does not output any versions", func() {
@@ -190,7 +192,7 @@ var _ = Describe("Check", func() {
 
 					Context("when the resource was triggered yesterday near the end of the time frame", func() {
 						BeforeEach(func() {
-							request.Version.Time = now.Add(-18 * time.Hour)
+							request.Version.Time = now.Add(-23 * time.Hour)
 						})
 
 						It("outputs a version containing the current time", func() {
@@ -263,7 +265,7 @@ var _ = Describe("Check", func() {
 				BeforeEach(func() {
 					start := now.Add(6 * time.Hour)
 					stop := now.Add(7 * time.Hour)
-					timeLayout := "3:04 PM MST"
+					timeLayout := "3:04 PM -0700"
 
 					request.Source.Start = start.Format(timeLayout)
 					request.Source.Stop = stop.Format(timeLayout)
