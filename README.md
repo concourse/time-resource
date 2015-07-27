@@ -10,7 +10,7 @@ level of precision is better left to other tools.
 
 ## Source Configuration
 
-* `interval`: *Optional.* The interval on which to report new versions.
+* `interval`: *Optional.* The interval on which to report new versions. Valid values: `60s`, `90m`, `1h`.
 
 * `start` and `stop`: *Optional.* Only create new time versions between this
   time range. The supported formats for the times are: `3:04 PM -0800`, `3PM
