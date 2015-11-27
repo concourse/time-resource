@@ -106,10 +106,16 @@ A more comprehensive example is available at https://onsi.github.io/gomega/#_tes
 package ghttp
 
 import (
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"regexp"
+	"strings"
 	"sync"
+
 	. "github.com/onsi/gomega"
 )
 
@@ -121,10 +127,24 @@ func new() *Server {
 	}
 }
 
+type routedHandler struct {
+	method     string
+	pathRegexp *regexp.Regexp
+	path       string
+	handler    http.HandlerFunc
+}
+
 // NewServer returns a new `*ghttp.Server` that wraps an `httptest` server.  The server is started automatically.
 func NewServer() *Server {
 	s := new()
 	s.HTTPTestServer = httptest.NewServer(s)
+	return s
+}
+
+// NewUnstartedServer return a new, unstarted, `*ghttp.Server`.  Useful for specifying a custom listener on `server.HTTPTestServer`.
+func NewUnstartedServer() *Server {
+	s := new()
+	s.HTTPTestServer = httptest.NewUnstartedServer(s)
 	return s
 }
 
@@ -147,11 +167,22 @@ type Server struct {
 	//Only applies if AllowUnhandledRequests is true
 	UnhandledRequestStatusCode int
 
+	//If provided, ghttp will log about each request received to the provided io.Writer
+	//Defaults to nil
+	//If you're using Ginkgo, set this to GinkgoWriter to get improved output during failures
+	Writer io.Writer
+
 	receivedRequests []*http.Request
 	requestHandlers  []http.HandlerFunc
+	routedHandlers   []routedHandler
 
 	writeLock *sync.Mutex
 	calls     int
+}
+
+//Start() starts an unstarted ghttp server.  It is a catastrophic error to call Start more than once (thanks, httptest).
+func (s *Server) Start() {
+	s.HTTPTestServer.Start()
 }
 
 //URL() returns a url that will hit the server
@@ -159,24 +190,72 @@ func (s *Server) URL() string {
 	return s.HTTPTestServer.URL
 }
 
+//Addr() returns the address on which the server is listening.
+func (s *Server) Addr() string {
+	return s.HTTPTestServer.Listener.Addr().String()
+}
+
 //Close() should be called at the end of each test.  It spins down and cleans up the test server.
 func (s *Server) Close() {
+	s.writeLock.Lock()
+	defer s.writeLock.Unlock()
+
 	server := s.HTTPTestServer
 	s.HTTPTestServer = nil
 	server.Close()
 }
 
 //ServeHTTP() makes Server an http.Handler
+//When the server receives a request it handles the request in the following order:
+//
+//1. If the request matches a handler registered with RouteToHandler, that handler is called.
+//2. Otherwise, if there are handlers registered via AppendHandlers, those handlers are called in order.
+//3. If all registered handlers have been called then:
+//   a) If AllowUnhandledRequests is true, the request will be handled with response code of UnhandledRequestStatusCode
+//   b) If AllowUnhandledRequests is false, the request will not be handled and the current test will be marked as failed.
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s.writeLock.Lock()
-	defer s.writeLock.Unlock()
 	defer func() {
-		recover()
+		e := recover()
+		if e != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		//If the handler panics GHTTP will silently succeed.  This is bad™.
+		//To catch this case we need to fail the test if the handler has panicked.
+		//However, if the handler is panicking because Ginkgo's causing it to panic (i.e. an asswertion failed)
+		//then we shouldn't double-report the error as this will confuse people.
+
+		//So: step 1, if this is a Ginkgo panic - do nothing, Ginkgo's aware of the failure
+		eAsString, ok := e.(string)
+		if ok && strings.Contains(eAsString, "defer GinkgoRecover()") {
+			return
+		}
+
+		//If we're here, we have to do step 2: assert that the error is nil.  This assertion will
+		//allow us to fail the test suite (note: we can't call Fail since Gomega is not allowed to import Ginkgo).
+		//Since a failed assertion throws a panic, and we are likely in a goroutine, we need to defer within our defer!
+		defer func() {
+			recover()
+		}()
+		Ω(e).Should(BeNil(), "Handler Panicked")
 	}()
 
-	if s.calls < len(s.requestHandlers) {
-		s.requestHandlers[s.calls](w, req)
+	if s.Writer != nil {
+		s.Writer.Write([]byte(fmt.Sprintf("GHTTP Received Request: %s - %s\n", req.Method, req.URL)))
+	}
+
+	s.receivedRequests = append(s.receivedRequests, req)
+	if routedHandler, ok := s.handlerForRoute(req.Method, req.URL.Path); ok {
+		s.writeLock.Unlock()
+		routedHandler(w, req)
+	} else if s.calls < len(s.requestHandlers) {
+		h := s.requestHandlers[s.calls]
+		s.calls++
+		s.writeLock.Unlock()
+		h(w, req)
 	} else {
+		s.writeLock.Unlock()
 		if s.AllowUnhandledRequests {
 			ioutil.ReadAll(req.Body)
 			req.Body.Close()
@@ -185,8 +264,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			Ω(req).Should(BeNil(), "Received Unhandled Request")
 		}
 	}
-	s.receivedRequests = append(s.receivedRequests, req)
-	s.calls++
 }
 
 //ReceivedRequests is an array containing all requests received by the server (both handled and unhandled requests)
@@ -195,6 +272,55 @@ func (s *Server) ReceivedRequests() []*http.Request {
 	defer s.writeLock.Unlock()
 
 	return s.receivedRequests
+}
+
+//RouteToHandler can be used to register handlers that will always handle requests that match
+//the passed in method and path.
+//
+//The path may be either a string object or a *regexp.Regexp.
+func (s *Server) RouteToHandler(method string, path interface{}, handler http.HandlerFunc) {
+	s.writeLock.Lock()
+	defer s.writeLock.Unlock()
+
+	rh := routedHandler{
+		method:  method,
+		handler: handler,
+	}
+
+	switch p := path.(type) {
+	case *regexp.Regexp:
+		rh.pathRegexp = p
+	case string:
+		rh.path = p
+	default:
+		panic("path must be a string or a regular expression")
+	}
+
+	for i, existingRH := range s.routedHandlers {
+		if existingRH.method == method &&
+			reflect.DeepEqual(existingRH.pathRegexp, rh.pathRegexp) &&
+			existingRH.path == rh.path {
+			s.routedHandlers[i] = rh
+			return
+		}
+	}
+	s.routedHandlers = append(s.routedHandlers, rh)
+}
+
+func (s *Server) handlerForRoute(method string, path string) (http.HandlerFunc, bool) {
+	for _, rh := range s.routedHandlers {
+		if rh.method == method {
+			if rh.pathRegexp != nil {
+				if rh.pathRegexp.Match([]byte(path)) {
+					return rh.handler, true
+				}
+			} else if rh.path == path {
+				return rh.handler, true
+			}
+		}
+	}
+
+	return nil, false
 }
 
 //AppendHandlers will appends http.HandlerFuncs to the server's list of registered handlers.  The first incoming request is handled by the first handler, the second by the second, etc...
@@ -232,4 +358,11 @@ func (s *Server) GetHandler(index int) http.HandlerFunc {
 func (s *Server) WrapHandler(index int, handler http.HandlerFunc) {
 	existingHandler := s.GetHandler(index)
 	s.SetHandler(index, CombineHandlers(existingHandler, handler))
+}
+
+func (s *Server) CloseClientConnections() {
+	s.writeLock.Lock()
+	defer s.writeLock.Unlock()
+
+	s.HTTPTestServer.CloseClientConnections()
 }
