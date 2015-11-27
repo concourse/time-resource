@@ -16,6 +16,15 @@ type InResponse struct {
 	Metadata Metadata `json:"metadata"`
 }
 
+type OutRequest struct {
+	Source  Source  `json:"source"`
+}
+
+type OutResponse struct {
+	Version  Version  `json:"version"`
+	Metadata Metadata `json:"metadata"`
+}
+
 type CheckRequest struct {
 	Source  Source  `json:"source"`
 	Version Version `json:"version"`

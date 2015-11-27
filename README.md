@@ -10,7 +10,8 @@ level of precision is better left to other tools.
 
 ## Source Configuration
 
-* `interval`: *Optional.* The interval on which to report new versions. Valid values: `60s`, `90m`, `1h`.
+* `interval`: *Optional.* The interval on which to report new versions. Valid
+  values: `60s`, `90m`, `1h`.
 
 * `start` and `stop`: *Optional.* Only create new time versions between this
   time range. The supported formats for the times are: `3:04 PM -0800`, `3PM
@@ -28,26 +29,26 @@ time period.
 
 ## Behavior
 
-### `check`: Report the current time.
+### `check`: Produce timestamps satisfying the interval.
 
 Returns a new version only if it has been longer than `interval` since the
 given version, or if there is no version given.
 
 
-### `in`: Report the given time, or current time.
+### `in`: Report the given time.
 
-If triggered by `check`, returns the original version as the resulting
-version. Otherwise, returns the current time as the resulting version.
+Fetches the given timestamp, writing the request's metadata to `input` in the
+destination.
 
 #### Parameters
 
 *None.*
 
 
-### `out`: Not implemented.
+### `out`: Produce the current time.
 
-If you can figure out what updating time could possibly mean in this
-universe, submit a PR. With tests.
+Returns a version for the current timestamp. This can be used to record the
+time within a build plan, e.g. after running some long-running task.
 
 #### Parameters
 
