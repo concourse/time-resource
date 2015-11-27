@@ -2,3 +2,4 @@
 
 go build -o built-in in/main.go
 go build -o built-check check/main.go
+go build -o built-out out/main.go
