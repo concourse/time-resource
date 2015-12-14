@@ -7,7 +7,6 @@ This resource is built to satisfy "trigger this build at least once every 5
 minutes," not "trigger this build on the 10th hour of every Sunday." That
 level of precision is better left to other tools.
 
-
 ## Source Configuration
 
 * `interval`: *Optional.* The interval on which to report new versions. Valid
@@ -53,3 +52,62 @@ time within a build plan, e.g. after running some long-running task.
 #### Parameters
 
 *None.*
+
+
+## Examples
+
+### Periodic trigger
+
+```yaml
+resources:
+- name: 5m
+  type: time
+  source: {interval: 5m}
+  
+jobs:
+- name: something-every-5m
+  plan:
+  - get: 5m
+    trigger: true
+  - task: something
+    config: # ...
+```
+
+### Trigger once within time range
+
+```yaml
+resources:
+- name: after-midnight
+  type: time
+  source:
+    start: 12:00 AM -0700
+    end: 1:00 AM -0700
+  
+jobs:
+- name: something-after-midnight
+  plan:
+  - get: after-midnight
+    trigger: true
+  - task: something
+    config: # ...
+```
+
+### Trigger on an interval within time range
+
+```yaml
+resources:
+- name: 5m-during-midnight-hour
+  type: time
+  source:
+    interval: 5m
+    start: 12:00 AM -0700
+    end: 1:00 AM -0700
+  
+jobs:
+- name: something-every-5m-during-midnight-hour
+  plan:
+  - get: 5m-during-midnight-hour
+    trigger: true
+  - task: something
+    config: # ...
+```
