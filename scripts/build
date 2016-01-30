@@ -1,5 +1,8 @@
 #!/bin/bash
 
-go build -o built-in in/main.go
-go build -o built-check check/main.go
-go build -o built-out out/main.go
+set -e -u -x
+
+mkdir -p assets
+go build -o assets/in in/main.go
+go build -o assets/check check/main.go
+go build -o assets/out out/main.go

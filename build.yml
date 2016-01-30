@@ -3,8 +3,11 @@ platform: linux
 image: docker:///concourse/static-golang
 
 inputs:
-  - name: time-resource
-    path: gopath/src/github.com/concourse/time-resource
+- name: time-resource
+  path: gopath/src/github.com/concourse/time-resource
+
+outputs:
+- name: built-resource
 
 run:
   path: gopath/src/github.com/concourse/time-resource/scripts/ci
