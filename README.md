@@ -81,7 +81,7 @@ resources:
   type: time
   source:
     start: 12:00 AM -0700
-    end: 1:00 AM -0700
+    stop: 1:00 AM -0700
   
 jobs:
 - name: something-after-midnight
@@ -101,7 +101,7 @@ resources:
   source:
     interval: 5m
     start: 12:00 AM -0700
-    end: 1:00 AM -0700
+    stop: 1:00 AM -0700
   
 jobs:
 - name: something-every-5m-during-midnight-hour
