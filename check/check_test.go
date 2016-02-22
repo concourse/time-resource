@@ -40,6 +40,47 @@ var _ = Describe("Check", func() {
 		})
 	})
 
+	Describe("ParseWeekday", func() {
+		It("can parse a weekday", func(){
+			parsedWeekdays, err := ParseWeekdays([]string{"Monday", "Tuesday"})
+
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(parsedWeekdays).Should(Equal([]time.Weekday{time.Monday, time.Tuesday}))
+		})
+
+		It("raise error if weekday can't be parsed", func(){
+			_, err := ParseWeekdays([]string{"Foo", "Tuesday"})
+
+			Ω(err).Should(HaveOccurred())
+		})
+	})
+
+	Describe("IsInDays", func() {
+		now := time.Now()
+		It("returns true if current day is in dayslist", func(){
+			location, _ := time.LoadLocation("Pacific/Honolulu")
+			currentTime := now.In(location)
+			daysList := []time.Weekday{currentTime.Weekday(), currentTime.Add(24 * time.Hour).Weekday()}
+
+			Ω(IsInDays(currentTime, daysList)).Should(BeTrue())
+		})
+
+		It("return true if list is empty", func(){
+			location, _ := time.LoadLocation("Pacific/Honolulu")
+			currentTime := now.In(location)
+
+			Ω(IsInDays(currentTime, nil)).Should(BeTrue())
+		})
+
+		It("returns false if not in list", func(){
+			location, _ := time.LoadLocation("Pacific/Honolulu")
+			currentTime := now.In(location)
+			daysList := []time.Weekday{currentTime.Add(24 * time.Hour).Weekday(), currentTime.Add(24 * time.Hour).Weekday()}
+
+			Ω(IsInDays(currentTime, daysList)).Should(BeFalse())
+		})
+	})
+
 	BeforeEach(func() {
 		checkCmd = exec.Command(checkPath)
 	})
@@ -127,6 +168,17 @@ var _ = Describe("Check", func() {
 
 			It("returns an error", func() {
 				Eventually(session.Err).Should(gbytes.Say("invalid interval"))
+				Eventually(session).Should(gexec.Exit(1))
+			})
+		})
+
+		Context("with an invalid day ", func() {
+			BeforeEach(func() {
+				request.Source.Days = []string{ "Foo","Bar" }
+				request.Source.Interval = "1m"
+			})
+			It("returns an error", func() {
+				Eventually(session.Err).Should(gbytes.Say("Invalid day Foo"))
 				Eventually(session).Should(gexec.Exit(1))
 			})
 		})
@@ -257,6 +309,29 @@ var _ = Describe("Check", func() {
 								})
 							})
 						})
+					})
+				})
+
+				Context("when the current day is specified", func() {
+					BeforeEach(func() {
+						location, _ := time.LoadLocation("Pacific/Honolulu")
+						request.Source.Days = []string{ now.In(location).Weekday().String(),
+																			now.In(location).Add(48 * time.Hour).Weekday().String() }
+					})
+					It("outputs a version containing the current time", func() {
+						Ω(response).Should(HaveLen(1))
+						Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+					})
+				})
+
+				Context("when we are out of the specified day", func(){
+					BeforeEach(func() {
+						location, _ := time.LoadLocation("Pacific/Honolulu")
+						request.Source.Days = []string{ now.In(location).Add(24 * time.Hour).Weekday().String(),
+																			now.In(location).Add(48 * time.Hour).Weekday().String() }
+					})
+					It("does not output any versions", func(){
+						Ω(response).Should(BeEmpty())
 					})
 				})
 			})

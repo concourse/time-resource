@@ -36,6 +36,7 @@ type Source struct {
 	Interval string `json:"interval"`
 	Start    string `json:"start"`
 	Stop     string `json:"stop"`
+	Days		 []string `json:"days"`
 }
 
 type Metadata []MetadataField

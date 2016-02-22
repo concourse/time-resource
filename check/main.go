@@ -51,6 +51,46 @@ func ParseTime(timeString string) (time.Time, error) {
 	return time.Time{}, errors.New("could not parse time")
 }
 
+func ParseWeekdays(daysList []string) ([]time.Weekday, error) {
+	days := []time.Weekday{}
+
+	for _,d := range daysList {
+			switch d {
+				case "Sunday":
+					days = append(days, time.Sunday)
+				case "Monday":
+					days = append(days, time.Monday)
+				case "Tuesday":
+					days = append(days, time.Tuesday)
+				case "Wednesday":
+					days = append(days, time.Wednesday)
+				case "Thursday":
+					days = append(days, time.Thursday)
+				case "Friday":
+					days = append(days, time.Friday)
+				case "Saturday":
+					days = append(days, time.Saturday)
+				default:
+					return []time.Weekday{}, errors.New("Invalid day " + d)
+			}
+	}
+	return days, nil
+}
+
+func IsInDays(currentTime time.Time, daysList []time.Weekday) bool {
+	if len(daysList) > 0 {
+		currentDay := currentTime.Weekday()
+		for _,d := range daysList {
+			if d == currentDay {
+				return true
+			}
+		}
+		return false
+	}
+
+	return true
+}
+
 func IntervalHasPassed(interval string, versionTime time.Time, currentTime time.Time) (bool, error) {
 	parsedInterval, err := time.ParseDuration(interval)
 
@@ -84,6 +124,12 @@ func main() {
 	lastCheckedAt := request.Version.Time.UTC()
 
 	validateConfig(start, stop, interval)
+
+	days,err := ParseWeekdays(request.Source.Days)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
 
 	if start != "" && stop != "" {
 		startTime, err := ParseTime(start)
@@ -137,7 +183,7 @@ func main() {
 		}
 	}
 
-	if incrementVersion {
+	if incrementVersion && IsInDays(currentTime, days){
 		versions = append(versions, models.Version{Time: currentTime})
 	}
 

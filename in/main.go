@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"strings"
 
 	"github.com/concourse/time-resource/models"
 )
@@ -59,6 +60,10 @@ func main() {
 
 	if request.Source.Stop != "" {
 		metadata = append(metadata, models.MetadataField{"stop", request.Source.Stop})
+	}
+
+	if len(request.Source.Days) > 0 {
+		metadata = append(metadata, models.MetadataField{"days", strings.Join(request.Source.Days[:], ", ")})
 	}
 
 	json.NewEncoder(os.Stdout).Encode(models.InResponse{
