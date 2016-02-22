@@ -23,6 +23,16 @@ level of precision is better left to other tools.
   stop: 9:00 +0100
   ```
 
+* `days`: *Optional.* Run only on this days. Supported days are: `Sunday`, `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday` and `Saturday`
+
+  e.g.
+
+  ```
+  days:
+    - Monday
+    - Wednesday
+  ```
+
 These can be combined to emit a new version on an interval during a particular
 time period.
 
@@ -63,7 +73,7 @@ resources:
 - name: 5m
   type: time
   source: {interval: 5m}
-  
+
 jobs:
 - name: something-every-5m
   plan:
@@ -82,7 +92,7 @@ resources:
   source:
     start: 12:00 AM -0700
     stop: 1:00 AM -0700
-  
+
 jobs:
 - name: something-after-midnight
   plan:
@@ -102,7 +112,7 @@ resources:
     interval: 5m
     start: 12:00 AM -0700
     stop: 1:00 AM -0700
-  
+
 jobs:
 - name: something-every-5m-during-midnight-hour
   plan:
