@@ -1,2 +1,2 @@
-FROM busybox
+FROM concourse/busyboxplus:base
 ADD assets/ /opt/resource/
