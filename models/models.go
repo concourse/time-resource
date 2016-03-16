@@ -17,7 +17,7 @@ type InResponse struct {
 }
 
 type OutRequest struct {
-	Source  Source  `json:"source"`
+	Source Source `json:"source"`
 }
 
 type OutResponse struct {
@@ -33,10 +33,10 @@ type CheckRequest struct {
 type CheckResponse []Version
 
 type Source struct {
-	Interval string `json:"interval"`
-	Start    string `json:"start"`
-	Stop     string `json:"stop"`
-	Days		 []string `json:"days"`
+	Interval string   `json:"interval"`
+	Start    string   `json:"start"`
+	Stop     string   `json:"stop"`
+	Days     []string `json:"days"`
 }
 
 type Metadata []MetadataField

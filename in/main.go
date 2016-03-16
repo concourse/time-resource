@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/concourse/time-resource/models"
 )

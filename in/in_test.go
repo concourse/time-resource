@@ -25,7 +25,7 @@ var _ = Describe("In", func() {
 		var err error
 
 		tmpdir, err = ioutil.TempDir("", "in-destination")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		destination = path.Join(tmpdir, "in-dir")
 
@@ -51,34 +51,34 @@ var _ = Describe("In", func() {
 
 		JustBeforeEach(func() {
 			stdin, err := inCmd.StdinPipe()
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			session, err := gexec.Start(inCmd, GinkgoWriter, GinkgoWriter)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			err = json.NewEncoder(stdin).Encode(request)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(session).Should(gexec.Exit(0))
 
 			err = json.Unmarshal(session.Out.Contents(), &response)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("reports the version's time as the version", func() {
-			Ω(response.Version.Time.UnixNano()).Should(Equal(request.Version.Time.UnixNano()))
+			Expect(response.Version.Time.UnixNano()).To(Equal(request.Version.Time.UnixNano()))
 		})
 
 		It("writes the requested version and source to the destination", func() {
 			input, err := os.Open(filepath.Join(destination, "input"))
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			var requested models.InRequest
 			err = json.NewDecoder(input).Decode(&requested)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
-			Ω(requested.Version.Time.Unix()).Should(Equal(request.Version.Time.Unix()))
-			Ω(requested.Source).Should(Equal(request.Source))
+			Expect(requested.Version.Time.Unix()).To(Equal(request.Version.Time.Unix()))
+			Expect(requested.Source).To(Equal(request.Source))
 		})
 
 		Context("when the request has no time in its version", func() {
@@ -87,7 +87,7 @@ var _ = Describe("In", func() {
 			})
 
 			It("reports the current time as the version", func() {
-				Ω(response.Version.Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+				Expect(response.Version.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 			})
 		})
 	})

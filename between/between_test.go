@@ -116,7 +116,7 @@ var _ = Describe("Between", func() {
 
 		It(description, func() {
 			result := between.Between(capturedTestCase.start, capturedTestCase.stop, capturedTestCase.timeToCompare)
-			Ω(result).Should(Equal(capturedTestCase.result))
+			Expect(result).To(Equal(capturedTestCase.result))
 		})
 	}
 })

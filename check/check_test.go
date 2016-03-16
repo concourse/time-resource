@@ -41,8 +41,8 @@ var _ = Describe("Check", func() {
 				By("working with " + format)
 				parsedTime, err := ParseTime(format)
 
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(parsedTime.Equal(expectedTime)).Should(BeTrue())
+				Expect(err).NotTo(HaveOccurred())
+				Expect(parsedTime.Equal(expectedTime)).To(BeTrue())
 			}
 		})
 	})
@@ -51,14 +51,14 @@ var _ = Describe("Check", func() {
 		It("can parse a weekday", func() {
 			parsedWeekdays, err := ParseWeekdays([]string{"Monday", "Tuesday"})
 
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(parsedWeekdays).Should(Equal([]time.Weekday{time.Monday, time.Tuesday}))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(parsedWeekdays).To(Equal([]time.Weekday{time.Monday, time.Tuesday}))
 		})
 
 		It("raise error if weekday can't be parsed", func() {
 			_, err := ParseWeekdays([]string{"Foo", "Tuesday"})
 
-			Ω(err).Should(HaveOccurred())
+			Expect(err).To(HaveOccurred())
 		})
 	})
 
@@ -69,11 +69,11 @@ var _ = Describe("Check", func() {
 				now.Add(24 * time.Hour).Weekday(),
 			}
 
-			Ω(IsInDays(now, daysList)).Should(BeTrue())
+			Expect(IsInDays(now, daysList)).To(BeTrue())
 		})
 
 		It("return true if list is empty", func() {
-			Ω(IsInDays(now, nil)).Should(BeTrue())
+			Expect(IsInDays(now, nil)).To(BeTrue())
 		})
 
 		It("returns false if not in list", func() {
@@ -82,7 +82,7 @@ var _ = Describe("Check", func() {
 				now.Add(48 * time.Hour).Weekday(),
 			}
 
-			Ω(IsInDays(now, daysList)).Should(BeFalse())
+			Expect(IsInDays(now, daysList)).To(BeFalse())
 		})
 	})
 
@@ -104,13 +104,13 @@ var _ = Describe("Check", func() {
 			var err error
 
 			stdin, err := checkCmd.StdinPipe()
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			session, err = gexec.Start(checkCmd, GinkgoWriter, GinkgoWriter)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			err = json.NewEncoder(stdin).Encode(request)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("with a missing everything", func() {
@@ -201,18 +201,18 @@ var _ = Describe("Check", func() {
 
 		JustBeforeEach(func() {
 			stdin, err := checkCmd.StdinPipe()
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			session, err := gexec.Start(checkCmd, GinkgoWriter, GinkgoWriter)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			err = json.NewEncoder(stdin).Encode(request)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(session).Should(gexec.Exit(0))
 
 			err = json.Unmarshal(session.Out.Contents(), &response)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("when a time range is specified", func() {
@@ -228,8 +228,8 @@ var _ = Describe("Check", func() {
 
 				Context("when no version is given", func() {
 					It("outputs a version containing the current time", func() {
-						Ω(response).Should(HaveLen(1))
-						Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 					})
 				})
 
@@ -240,7 +240,7 @@ var _ = Describe("Check", func() {
 						})
 
 						It("does not output any versions", func() {
-							Ω(response).Should(BeEmpty())
+							Expect(response).To(BeEmpty())
 						})
 					})
 
@@ -250,8 +250,8 @@ var _ = Describe("Check", func() {
 						})
 
 						It("outputs a version containing the current time", func() {
-							Ω(response).Should(HaveLen(1))
-							Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+							Expect(response).To(HaveLen(1))
+							Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 						})
 					})
 
@@ -261,8 +261,8 @@ var _ = Describe("Check", func() {
 						})
 
 						It("outputs a version containing the current time", func() {
-							Ω(response).Should(HaveLen(1))
-							Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+							Expect(response).To(HaveLen(1))
+							Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 						})
 					})
 
@@ -273,8 +273,8 @@ var _ = Describe("Check", func() {
 
 						Context("when no version is given", func() {
 							It("outputs a version containing the current time", func() {
-								Ω(response).Should(HaveLen(1))
-								Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+								Expect(response).To(HaveLen(1))
+								Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 							})
 						})
 
@@ -285,7 +285,7 @@ var _ = Describe("Check", func() {
 								})
 
 								It("does not output any versions", func() {
-									Ω(response).Should(BeEmpty())
+									Expect(response).To(BeEmpty())
 								})
 							})
 
@@ -295,8 +295,8 @@ var _ = Describe("Check", func() {
 								})
 
 								It("outputs a version containing the current time", func() {
-									Ω(response).Should(HaveLen(1))
-									Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+									Expect(response).To(HaveLen(1))
+									Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 								})
 							})
 
@@ -306,8 +306,8 @@ var _ = Describe("Check", func() {
 								})
 
 								It("outputs a version containing the current time", func() {
-									Ω(response).Should(HaveLen(1))
-									Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+									Expect(response).To(HaveLen(1))
+									Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 								})
 							})
 						})
@@ -326,8 +326,8 @@ var _ = Describe("Check", func() {
 					})
 
 					It("outputs a version containing the current time", func() {
-						Ω(response).Should(HaveLen(1))
-						Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 					})
 				})
 
@@ -340,7 +340,7 @@ var _ = Describe("Check", func() {
 					})
 
 					It("does not output any versions", func() {
-						Ω(response).Should(BeEmpty())
+						Expect(response).To(BeEmpty())
 					})
 				})
 			})
@@ -357,7 +357,7 @@ var _ = Describe("Check", func() {
 
 				Context("when no version is given", func() {
 					It("does not output any versions", func() {
-						Ω(response).Should(BeEmpty())
+						Expect(response).To(BeEmpty())
 					})
 				})
 
@@ -374,7 +374,7 @@ var _ = Describe("Check", func() {
 					})
 
 					It("does not output any versions", func() {
-						Ω(response).Should(BeEmpty())
+						Expect(response).To(BeEmpty())
 					})
 				})
 			})
@@ -387,8 +387,8 @@ var _ = Describe("Check", func() {
 
 			Context("when no version is given", func() {
 				It("outputs a version containing the current time", func() {
-					Ω(response).Should(HaveLen(1))
-					Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+					Expect(response).To(HaveLen(1))
+					Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 				})
 			})
 
@@ -399,7 +399,7 @@ var _ = Describe("Check", func() {
 					})
 
 					It("does not output any versions", func() {
-						Ω(response).Should(BeEmpty())
+						Expect(response).To(BeEmpty())
 					})
 				})
 
@@ -409,8 +409,8 @@ var _ = Describe("Check", func() {
 					})
 
 					It("outputs a version containing the current time", func() {
-						Ω(response).Should(HaveLen(1))
-						Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 					})
 				})
 
@@ -420,8 +420,8 @@ var _ = Describe("Check", func() {
 					})
 
 					It("outputs a version containing the current time", func() {
-						Ω(response).Should(HaveLen(1))
-						Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 					})
 				})
 			})

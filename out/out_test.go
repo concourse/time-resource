@@ -24,7 +24,7 @@ var _ = Describe("Out", func() {
 		var err error
 
 		tmpdir, err = ioutil.TempDir("", "out-source")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		source = path.Join(tmpdir, "out-dir")
 
@@ -49,22 +49,22 @@ var _ = Describe("Out", func() {
 
 		JustBeforeEach(func() {
 			stdin, err := outCmd.StdinPipe()
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			session, err := gexec.Start(outCmd, GinkgoWriter, GinkgoWriter)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			err = json.NewEncoder(stdin).Encode(request)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(session).Should(gexec.Exit(0))
 
 			err = json.Unmarshal(session.Out.Contents(), &response)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("reports the current time as the version", func() {
-			Ω(response.Version.Time).Should(BeTemporally("~", time.Now(), time.Second))
+			Expect(response.Version.Time).To(BeTemporally("~", time.Now(), time.Second))
 		})
 	})
 })
