@@ -16,7 +16,14 @@ import (
 )
 
 var _ = Describe("Check", func() {
-	var checkCmd *exec.Cmd
+	var (
+		checkCmd *exec.Cmd
+		now      time.Time
+	)
+
+	BeforeEach(func() {
+		now = time.Now().UTC()
+	})
 
 	Describe("ParseTime", func() {
 		It("can parse many formats", func() {
@@ -41,14 +48,14 @@ var _ = Describe("Check", func() {
 	})
 
 	Describe("ParseWeekday", func() {
-		It("can parse a weekday", func(){
+		It("can parse a weekday", func() {
 			parsedWeekdays, err := ParseWeekdays([]string{"Monday", "Tuesday"})
 
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(parsedWeekdays).Should(Equal([]time.Weekday{time.Monday, time.Tuesday}))
 		})
 
-		It("raise error if weekday can't be parsed", func(){
+		It("raise error if weekday can't be parsed", func() {
 			_, err := ParseWeekdays([]string{"Foo", "Tuesday"})
 
 			Ω(err).Should(HaveOccurred())
@@ -56,28 +63,26 @@ var _ = Describe("Check", func() {
 	})
 
 	Describe("IsInDays", func() {
-		now := time.Now()
-		It("returns true if current day is in dayslist", func(){
-			location, _ := time.LoadLocation("Pacific/Honolulu")
-			currentTime := now.In(location)
-			daysList := []time.Weekday{currentTime.Weekday(), currentTime.Add(24 * time.Hour).Weekday()}
+		It("returns true if current day is in dayslist", func() {
+			daysList := []time.Weekday{
+				now.Weekday(),
+				now.Add(24 * time.Hour).Weekday(),
+			}
 
-			Ω(IsInDays(currentTime, daysList)).Should(BeTrue())
+			Ω(IsInDays(now, daysList)).Should(BeTrue())
 		})
 
-		It("return true if list is empty", func(){
-			location, _ := time.LoadLocation("Pacific/Honolulu")
-			currentTime := now.In(location)
-
-			Ω(IsInDays(currentTime, nil)).Should(BeTrue())
+		It("return true if list is empty", func() {
+			Ω(IsInDays(now, nil)).Should(BeTrue())
 		})
 
-		It("returns false if not in list", func(){
-			location, _ := time.LoadLocation("Pacific/Honolulu")
-			currentTime := now.In(location)
-			daysList := []time.Weekday{currentTime.Add(24 * time.Hour).Weekday(), currentTime.Add(24 * time.Hour).Weekday()}
+		It("returns false if not in list", func() {
+			daysList := []time.Weekday{
+				now.Add(24 * time.Hour).Weekday(),
+				now.Add(48 * time.Hour).Weekday(),
+			}
 
-			Ω(IsInDays(currentTime, daysList)).Should(BeFalse())
+			Ω(IsInDays(now, daysList)).Should(BeFalse())
 		})
 	})
 
@@ -174,11 +179,12 @@ var _ = Describe("Check", func() {
 
 		Context("with an invalid day ", func() {
 			BeforeEach(func() {
-				request.Source.Days = []string{ "Foo","Bar" }
+				request.Source.Days = []string{"Foo", "Bar"}
 				request.Source.Interval = "1m"
 			})
+
 			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("Invalid day Foo"))
+				Eventually(session.Err).Should(gbytes.Say("invalid day 'Foo'"))
 				Eventually(session).Should(gexec.Exit(1))
 			})
 		})
@@ -210,18 +216,14 @@ var _ = Describe("Check", func() {
 		})
 
 		Context("when a time range is specified", func() {
-			now := time.Now()
-
 			Context("when we are in the specified time range", func() {
 				BeforeEach(func() {
-					location, _ := time.LoadLocation("Pacific/Honolulu")
-					start := now.In(location).Add(-1 * time.Hour)
-					stop := now.In(location).Add(1 * time.Hour)
+					start := now.Add(-1 * time.Hour)
+					stop := now.Add(1 * time.Hour)
 					timeLayout := "3:04 PM -0700"
 
 					request.Source.Start = start.Format(timeLayout)
 					request.Source.Stop = stop.Format(timeLayout)
-
 				})
 
 				Context("when no version is given", func() {
@@ -314,23 +316,30 @@ var _ = Describe("Check", func() {
 
 				Context("when the current day is specified", func() {
 					BeforeEach(func() {
-						location, _ := time.LoadLocation("Pacific/Honolulu")
-						request.Source.Days = []string{ now.In(location).Weekday().String(),
-																			now.In(location).Add(48 * time.Hour).Weekday().String() }
+						request.Source.Days = []string{
+							now.Add(24 * time.Hour).Weekday().String(),
+							now.Add(48 * time.Hour).Weekday().String(),
+						}
+						request.Source.Days = []string{
+							now.Weekday().String(),
+							now.Add(48 * time.Hour).Weekday().String()}
 					})
+
 					It("outputs a version containing the current time", func() {
 						Ω(response).Should(HaveLen(1))
 						Ω(response[0].Time.Unix()).Should(BeNumerically("~", time.Now().Unix(), 1))
 					})
 				})
 
-				Context("when we are out of the specified day", func(){
+				Context("when we are out of the specified day", func() {
 					BeforeEach(func() {
-						location, _ := time.LoadLocation("Pacific/Honolulu")
-						request.Source.Days = []string{ now.In(location).Add(24 * time.Hour).Weekday().String(),
-																			now.In(location).Add(48 * time.Hour).Weekday().String() }
+						request.Source.Days = []string{
+							now.Add(24 * time.Hour).Weekday().String(),
+							now.Add(48 * time.Hour).Weekday().String(),
+						}
 					})
-					It("does not output any versions", func(){
+
+					It("does not output any versions", func() {
 						Ω(response).Should(BeEmpty())
 					})
 				})
