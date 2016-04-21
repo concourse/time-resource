@@ -40,7 +40,7 @@ time period.
 
 ### `check`: Produce timestamps satisfying the interval.
 
-Returns a new version only if it has been longer than `interval` since the
+Returns current version and new version only if it has been longer than `interval` since the
 given version, or if there is no version given.
 
 
