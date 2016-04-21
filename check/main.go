@@ -184,6 +184,11 @@ func main() {
 	}
 
 	versions := []models.Version{}
+
+	if !lastCheckedAt.IsZero() {
+		versions = append(versions, models.Version{Time: request.Version.Time})
+	}
+
 	if incrementVersion && IsInDays(currentTime, days) {
 		versions = append(versions, models.Version{Time: currentTime})
 	}
