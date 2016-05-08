@@ -26,24 +26,46 @@ var _ = Describe("Check", func() {
 	})
 
 	Describe("ParseTime", func() {
-		It("can parse many formats", func() {
-			expectedTime := time.Date(0, 1, 1, 21, 0, 0, 0, time.UTC)
+		Context("with time zone set in formats", func(){
+			It("can parse many formats", func() {
+				expectedTime := time.Date(0, 1, 1, 21, 0, 0, 0, time.UTC)
 
-			formats := []string{
-				"1:00 PM -0800",
-				"1PM -0800",
-				"1 PM -0800",
-				"13:00 -0800",
-				"1300 -0800",
-			}
+				formats := []string{
+					"1:00 PM -0800",
+					"1PM -0800",
+					"1 PM -0800",
+					"13:00 -0800",
+					"1300 -0800",
+				}
+				loc, _ := time.LoadLocation("UTC")
+				for _, format := range formats {
+					By("working with " + format)
+					parsedTime, err := ParseTime(format, loc)
 
-			for _, format := range formats {
-				By("working with " + format)
-				parsedTime, err := ParseTime(format)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(parsedTime.Equal(expectedTime)).To(BeTrue())
+				}
+			})
+		})
+		Context("without time zone set in formats", func(){
+			It("can parse many formats", func() {
+				expectedTime := time.Date(0, 1, 1, 13, 0, 0, 0, time.UTC)
 
-				Expect(err).NotTo(HaveOccurred())
-				Expect(parsedTime.Equal(expectedTime)).To(BeTrue())
-			}
+				formats := []string{
+					"1:00 PM",
+					"1PM",
+					"1 PM",
+					"13:00",
+					"1300",
+				}
+				loc, _ := time.LoadLocation("UTC")
+				for _, format := range formats {
+					By("working with " + format)
+					parsedTime, err := ParseTime(format, loc)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(parsedTime.Equal(expectedTime)).To(BeTrue())
+				}
+			})
 		})
 	})
 
