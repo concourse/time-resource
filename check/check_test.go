@@ -26,24 +26,57 @@ var _ = Describe("Check", func() {
 	})
 
 	Describe("ParseTime", func() {
-		It("can parse many formats", func() {
-			expectedTime := time.Date(0, 1, 1, 21, 0, 0, 0, time.UTC)
+		Context("when numeric time zone offset is set", func() {
+			var formats []string
 
-			formats := []string{
-				"1:00 PM -0800",
-				"1PM -0800",
-				"1 PM -0800",
-				"13:00 -0800",
-				"1300 -0800",
-			}
+			BeforeEach(func() {
+				formats = []string{
+					"1:00 PM -0800",
+					"1PM -0800",
+					"1 PM -0800",
+					"13:00 -0800",
+					"1300 -0800",
+				}
+			})
 
-			for _, format := range formats {
-				By("working with " + format)
-				parsedTime, err := ParseTime(format)
+			It("can parse all format combinations", func() {
+				expectedTime := time.Date(0, 1, 1, 21, 0, 0, 0, time.UTC)
 
-				Expect(err).NotTo(HaveOccurred())
-				Expect(parsedTime.Equal(expectedTime)).To(BeTrue())
-			}
+				loc, _ := time.LoadLocation("UTC") // note: IANA TZ loc conflicts with offset
+				for _, format := range formats {
+					By("working with time " + format)
+					parsedTime, err := ParseTime(format, loc)
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(parsedTime).To(Equal(expectedTime))
+				}
+			})
+		})
+
+		Context("when numeric time zone offset is not set", func() {
+			var formats []string
+
+			BeforeEach(func() {
+				formats = []string{
+					"1:00 PM",
+					"1PM",
+					"1 PM",
+					"13:00",
+					"1300",
+				}
+			})
+
+			It("can parse all format combinations", func() {
+				expectedTime := time.Date(0, 1, 1, 13, 0, 0, 0, time.UTC)
+
+				loc, _ := time.LoadLocation("UTC")
+				for _, format := range formats {
+					By("working with time " + format)
+					parsedTime, err := ParseTime(format, loc)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(parsedTime).To(Equal(expectedTime))
+				}
+			})
 		})
 	})
 

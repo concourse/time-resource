@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/concourse/time-resource/between"
@@ -19,9 +20,14 @@ func init() {
 	timeFormats = append(timeFormats, "3 PM -0700")
 	timeFormats = append(timeFormats, "15:04 -0700")
 	timeFormats = append(timeFormats, "1504 -0700")
+	timeFormats = append(timeFormats, "3:04 PM")
+	timeFormats = append(timeFormats, "3PM")
+	timeFormats = append(timeFormats, "3 PM")
+	timeFormats = append(timeFormats, "15:04")
+	timeFormats = append(timeFormats, "1504")
 }
 
-func validateConfig(start string, stop string, interval string) {
+func validateConfig(start string, stop string, interval string, location string) {
 	if start == "" && stop == "" && interval == "" {
 		fmt.Fprintln(os.Stderr, "one of 'interval' or 'between' must be specified")
 		os.Exit(1)
@@ -36,16 +42,21 @@ func validateConfig(start string, stop string, interval string) {
 		fmt.Fprintln(os.Stderr, "empty stop time!")
 		os.Exit(1)
 	}
+
+	if (strings.ContainsAny(start, "+-") || strings.ContainsAny(stop, "+-")) && location != "" {
+		fmt.Fprintln(os.Stderr, "cannot specify both IANA timezone location and numeric timezone offset")
+		os.Exit(1)
+	}
 }
 
-func ParseTime(timeString string) (time.Time, error) {
+func ParseTime(timeString string, loc *time.Location) (time.Time, error) {
 	for _, format := range timeFormats {
 		parsedTime, err := time.Parse(format, timeString)
 		if err != nil {
 			continue
 		}
 
-		return parsedTime.UTC(), nil
+		return parsedTime.In(loc), nil
 	}
 
 	return time.Time{}, errors.New("could not parse time")
@@ -107,7 +118,6 @@ func IntervalHasPassed(interval string, versionTime time.Time, currentTime time.
 }
 
 func main() {
-	currentTime := time.Now().UTC()
 	var request models.CheckRequest
 
 	err := json.NewDecoder(os.Stdin).Decode(&request)
@@ -119,11 +129,21 @@ func main() {
 	start := request.Source.Start
 	stop := request.Source.Stop
 	interval := request.Source.Interval
+	validateConfig(start, stop, interval, request.Source.Location)
+
+	if request.Source.Location == "" {
+		request.Source.Location = "UTC"
+	}
+	loc, err := time.LoadLocation(request.Source.Location)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+	currentTime := time.Now().In(loc)
+
 	incrementVersion := false
 
-	lastCheckedAt := request.Version.Time.UTC()
-
-	validateConfig(start, stop, interval)
+	lastCheckedAt := request.Version.Time.In(loc)
 
 	days, err := ParseWeekdays(request.Source.Days)
 	if err != nil {
@@ -132,13 +152,13 @@ func main() {
 	}
 
 	if start != "" && stop != "" {
-		startTime, err := ParseTime(start)
+		startTime, err := ParseTime(start, loc)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "invalid start time: "+start+"; "+err.Error())
 			os.Exit(1)
 		}
 
-		stopTime, err := ParseTime(stop)
+		stopTime, err := ParseTime(stop, loc)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "invalid stop time: "+stop+"; "+err.Error())
 			os.Exit(1)
