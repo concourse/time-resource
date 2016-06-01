@@ -56,6 +56,20 @@ var _ = Describe("Between", func() {
 
 		{
 			description:   "not between the start and stop time down to the minute",
+			start:         time.Date(2010, 1, 5, 11, 7, 0, 0, time.UTC),
+			stop:          time.Date(2010, 1, 5, 11, 10, 0, 0, time.UTC),
+			timeToCompare: time.Date(2010, 1, 5, 11, 5, 0, 0, time.UTC),
+			result:        false,
+		},
+		{
+			description:   "not between the start and stop time down to the minute",
+			start:         time.Date(2010, 1, 5, 10, 7, 0, 0, time.UTC),
+			stop:          time.Date(2010, 1, 5, 11, 10, 0, 0, time.UTC),
+			timeToCompare: time.Date(2010, 1, 5, 11, 5, 0, 0, time.UTC),
+			result:        true,
+		},
+		{
+			description:   "not between the start and stop time down to the minute",
 			start:         time.Date(2010, 1, 5, 2, 20, 0, 0, time.UTC),
 			stop:          time.Date(2010, 1, 5, 4, 0, 0, 0, time.UTC),
 			timeToCompare: time.Date(2010, 1, 5, 3, 10, 0, 0, time.UTC),

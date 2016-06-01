@@ -30,11 +30,11 @@ func Between(start time.Time, stop time.Time, timeToCompare time.Time) bool {
 		return false
 	}
 
-	if timeToCompareHour == stopHour {
-		return (utcCompare.Minute() <= utcStop.Minute())
-	} else if timeToCompareHour == startHour {
-		return (utcCompare.Minute() >= utcStart.Minute())
-	} else {
-		return true
+	if timeToCompareHour == stopHour && utcCompare.Minute() > utcStop.Minute() {
+		return false
 	}
+	if timeToCompareHour == startHour && utcCompare.Minute() < utcStart.Minute() {
+		return false
+	}
+	return true
 }
