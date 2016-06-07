@@ -2,43 +2,28 @@ package between
 
 import "time"
 
-func Between(start time.Time, stop time.Time, timeToCompare time.Time) bool {
-	utcStart := start.UTC()
-	utcStop := stop.UTC()
-	utcCompare := timeToCompare.UTC()
+var formatBase, _ = time.Parse("3:04 PM -0700", "12:00 AM +0000")
 
-	var stopHour int
-	var timeToCompareHour int
-	startHour := 0
+const day = 24 * time.Hour
 
-	if utcStart.Hour() > utcStop.Hour() {
-		stopHour = utcStop.Hour() + 24 - utcStart.Hour()
-	} else {
-		stopHour = utcStop.Hour() - utcStart.Hour()
+func Between(startBase time.Time, stopBase time.Time, now time.Time) bool {
+	if stopBase.Before(startBase) {
+		return Between(startBase, stopBase.AddDate(0, 0, 1), now) || Between(startBase.AddDate(0, 0, -1), stopBase, now)
 	}
 
-	if utcStart.Hour() > utcCompare.Hour() {
-		timeToCompareHour = utcCompare.Hour() + 24 - utcStart.Hour()
-	} else {
-		timeToCompareHour = utcCompare.Hour() - utcStart.Hour()
+	startDuration := startBase.Sub(formatBase)
+	stopDuration := stopBase.Sub(formatBase)
+
+	start := now.Truncate(day).Add(startDuration)
+	stop := now.Truncate(day).Add(stopDuration)
+
+	if now.Equal(start) {
+		return true
 	}
 
-	hoursInRange := (timeToCompareHour >= startHour) &&
-		(timeToCompareHour <= stopHour)
-
-	if !hoursInRange {
-		return false
+	if now.After(start) && now.Before(stop) {
+		return true
 	}
 
-	if timeToCompareHour == stopHour && subHour(utcCompare) >= subHour(utcStop) {
-		return false
-	}
-	if timeToCompareHour == startHour && subHour(utcCompare) < subHour(utcStart) {
-		return false
-	}
-	return true
-}
-
-func subHour(t time.Time) time.Duration {
-	return t.Sub(t.Truncate(time.Hour))
+	return false
 }

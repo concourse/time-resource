@@ -1,164 +1,151 @@
 package between_test
 
 import (
-	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	. "github.com/onsi/ginkgo/extensions/table"
 
 	"github.com/concourse/time-resource/between"
 )
 
 type testCase struct {
-	description string
+	start string
+	stop  string
 
-	start         time.Time
-	stop          time.Time
-	timeToCompare time.Time
+	timeToCompare string
+	extraTime     time.Duration
 
 	result bool
 }
 
-var _ = Describe("Between", func() {
-	pst, _ := time.LoadLocation("America/Los_Angeles")
-	mst, _ := time.LoadLocation("America/Denver")
+const exampleFormat = "3:04 PM -0700"
 
-	var cases = []testCase{
-		{
-			description:   "between the start and stop time",
-			start:         time.Date(2010, 1, 5, 2, 0, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 4, 0, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 5, 3, 0, 0, 0, time.UTC),
-			result:        true,
-		},
-		{
-			description:   "between the start and stop time down to the minute",
-			start:         time.Date(2010, 1, 5, 2, 1, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 2, 3, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 5, 2, 2, 0, 0, time.UTC),
-			result:        true,
-		},
-		{
-			description:   "not between the start and stop time",
-			start:         time.Date(2010, 1, 5, 2, 0, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 4, 0, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 5, 5, 0, 0, 0, time.UTC),
-			result:        false,
-		},
-		{
-			description:   "not between the start and stop time down to the minute",
-			start:         time.Date(2010, 1, 5, 2, 0, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 4, 0, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 5, 4, 10, 0, 0, time.UTC),
-			result:        false,
-		},
+func (testCase testCase) Run() {
+	start, err := time.Parse(exampleFormat, testCase.start)
+	Expect(err).NotTo(HaveOccurred())
 
-		{
-			description:   "not between the start and stop time down to the minute",
-			start:         time.Date(2010, 1, 5, 11, 7, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 11, 10, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 5, 11, 5, 0, 0, time.UTC),
-			result:        false,
-		},
-		{
-			description:   "not between the start and stop time down to the minute",
-			start:         time.Date(2010, 1, 5, 10, 7, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 11, 10, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 5, 11, 5, 0, 0, time.UTC),
-			result:        true,
-		},
-		{
-			description:   "not between the start and stop time down to the minute",
-			start:         time.Date(2010, 1, 5, 2, 20, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 4, 0, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 5, 3, 10, 0, 0, time.UTC),
-			result:        true,
-		},
-		{
-			description:   "one nanosecond before the start time",
-			start:         time.Date(2010, 1, 2, 3, 4, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 2, 3, 7, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 2, 3, 3, 59, 999999999, time.UTC),
-			result:        false,
-		},
-		{
-			description:   "equal to the start time",
-			start:         time.Date(2010, 1, 2, 3, 4, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 2, 3, 7, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 2, 3, 4, 0, 0, time.UTC),
-			result:        true,
-		},
-		{
-			description:   "one nanosecond before the stop time",
-			start:         time.Date(2010, 1, 2, 3, 4, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 2, 3, 7, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 2, 3, 6, 59, 999999999, time.UTC),
-			result:        true,
-		},
-		{
-			description:   "equal to the stop time",
-			start:         time.Date(2010, 1, 2, 3, 4, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 2, 3, 7, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 1, 2, 3, 7, 0, 0, time.UTC),
-			result:        false,
-		},
-		{
-			description:   "between the start and stop time but on a different day",
-			start:         time.Date(2010, 1, 5, 2, 0, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 4, 0, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 2, 5, 3, 0, 0, 0, time.UTC),
-			result:        true,
-		},
+	stop, err := time.Parse(exampleFormat, testCase.stop)
+	Expect(err).NotTo(HaveOccurred())
 
-		// Our date parsing library always returns the date as 1/1 since we only
-		// give it a time. If the stop time is before the start time then assume
-		// that the stop is in the next day.
-		{
-			description:   "between the start and stop time but the stop time is before the start time",
-			start:         time.Date(2010, 1, 5, 5, 0, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 1, 0, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 2, 5, 6, 0, 0, 0, time.UTC),
-			result:        true,
-		},
-		{
-			description:   "between the start and stop time but the stop time is before the start time (ignoring the date)",
-			start:         time.Date(2010, 1, 5, 5, 0, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 2, 1, 0, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 2, 5, 6, 0, 0, 0, time.UTC),
-			result:        true,
-		},
-		{
-			description:   "between the start and stop time but the stop time is before the start time (when the time to compare is in the early hours)",
-			start:         time.Date(2010, 1, 5, 20, 0, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 8, 0, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 2, 5, 1, 0, 0, 0, time.UTC),
-			result:        true,
-		},
-		{
-			description:   "between the start and stop time but the stop time is before the start time",
-			start:         time.Date(2010, 1, 5, 5, 0, 0, 0, time.UTC),
-			stop:          time.Date(2010, 1, 5, 1, 0, 0, 0, time.UTC),
-			timeToCompare: time.Date(2010, 2, 5, 4, 0, 0, 0, time.UTC),
-			result:        false,
-		},
+	timeOfDay, err := time.Parse(exampleFormat, testCase.timeToCompare)
+	Expect(err).NotTo(HaveOccurred())
 
-		{
-			description:   "between the start and stop time but the compare time is in a different timezone",
-			start:         time.Date(2010, 1, 5, 2, 0, 0, 0, mst),
-			stop:          time.Date(2010, 1, 5, 6, 0, 0, 0, mst),
-			timeToCompare: time.Date(2010, 2, 5, 1, 1, 0, 0, pst),
-			result:        true,
-		},
-	}
+	realTime := time.Now().In(timeOfDay.Location())
 
-	for _, testCase := range cases {
-		capturedTestCase := testCase // closures (╯°□°）╯︵ ┻━┻
-		description := fmt.Sprintf("returns %t if the time to compare is %s", capturedTestCase.result, capturedTestCase.description)
+	timeToCompare := time.Date(
+		realTime.Year(),
+		realTime.Month(),
+		realTime.Day(),
+		timeOfDay.Hour(),
+		timeOfDay.Minute(),
+		timeOfDay.Second(),
+		timeOfDay.Nanosecond(),
+		timeOfDay.Location(),
+	).Add(testCase.extraTime)
 
-		It(description, func() {
-			result := between.Between(capturedTestCase.start, capturedTestCase.stop, capturedTestCase.timeToCompare)
-			Expect(result).To(Equal(capturedTestCase.result))
-		})
-	}
-})
+	result := between.Between(start, stop, timeToCompare)
+	Expect(result).To(Equal(testCase.result))
+}
+
+var _ = DescribeTable("Between", (testCase).Run,
+	Entry("between the start and stop time", testCase{
+		start:         "2:00 AM +0000",
+		stop:          "4:00 AM +0000",
+		timeToCompare: "3:00 AM +0000",
+		result:        true,
+	}),
+	Entry("between the start and stop time down to the minute", testCase{
+		start:         "2:01 AM +0000",
+		stop:          "2:03 AM +0000",
+		timeToCompare: "2:02 AM +0000",
+		result:        true,
+	}),
+	Entry("not between the start and stop time", testCase{
+		start:         "2:00 AM +0000",
+		stop:          "4:00 AM +0000",
+		timeToCompare: "5:00 AM +0000",
+		result:        false,
+	}),
+	Entry("after the stop time, down to the minute", testCase{
+		start:         "2:00 AM +0000",
+		stop:          "4:00 AM +0000",
+		timeToCompare: "4:10 AM +0000",
+		result:        false,
+	}),
+	Entry("before the start time, down to the minute", testCase{
+		start:         "11:07 AM +0000",
+		stop:          "11:10 AM +0000",
+		timeToCompare: "11:05 AM +0000",
+		result:        false,
+	}),
+	Entry("one nanosecond before the start time", testCase{
+		start:         "3:04 AM +0000",
+		stop:          "3:07 AM +0000",
+		timeToCompare: "3:03 AM +0000",
+		extraTime:     time.Minute - time.Nanosecond,
+		result:        false,
+	}),
+	Entry("equal to the start time", testCase{
+		start:         "3:04 AM +0000",
+		stop:          "3:07 AM +0000",
+		timeToCompare: "3:04 AM +0000",
+		result:        true,
+	}),
+	Entry("one nanosecond before the stop time", testCase{
+		start:         "3:04 AM +0000",
+		stop:          "3:07 AM +0000",
+		timeToCompare: "3:06 AM +0000",
+		extraTime:     time.Minute - time.Nanosecond,
+		result:        true,
+	}),
+	Entry("equal to the stop time", testCase{
+		start:         "3:04 AM +0000",
+		stop:          "3:07 AM +0000",
+		timeToCompare: "3:07 AM +0000",
+		result:        false,
+	}),
+	Entry("between the start and stop time but on a different day", testCase{
+		start:         "2:00 AM +0000",
+		stop:          "4:00 AM +0000",
+		timeToCompare: "3:00 AM +0000",
+		result:        true,
+	}),
+
+	// Our date parsing library always returns the date as 1/1 since we only
+	// give it a time. If the stop time is before the start time then assume
+	// that the stop is in the next day.
+	Entry("between the start and stop time but the stop time is before the start time", testCase{
+		start:         "5:00 AM +0000",
+		stop:          "1:00 AM +0000",
+		timeToCompare: "6:00 AM +0000",
+		result:        true,
+	}),
+	Entry("between the start and stop time but the stop time is before the start time (ignoring the date)", testCase{
+		start:         "5:00 AM +0000",
+		stop:          "1:00 AM +0000",
+		timeToCompare: "6:00 AM +0000",
+		result:        true,
+	}),
+	Entry("between the start and stop time but the stop time is before the start time (when the time to compare is in the early hours)", testCase{
+		start:         "8:00 PM +0000",
+		stop:          "8:00 AM +0000",
+		timeToCompare: "1:00 AM +0000",
+		extraTime:     24 * time.Hour, // real life doesn't use time parsing; it'll actually be a day in advance
+		result:        true,
+	}),
+	Entry("between the start and stop time but the stop time is before the start time", testCase{
+		start:         "5:00 AM +0000",
+		stop:          "1:00 AM +0000",
+		timeToCompare: "4:00 AM +0000",
+		result:        false,
+	}),
+
+	Entry("between the start and stop time but the compare time is in a different timezone", testCase{
+		start:         "2:00 AM -0600",
+		stop:          "6:00 AM -0600",
+		timeToCompare: "1:00 AM -0700",
+		result:        true,
+	}),
+)
