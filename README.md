@@ -27,7 +27,7 @@ level of precision is better left to other tools.
   stop: 9:00 +0100
   ```
 
-* `days`: *Optional.* Run only on this days. Supported days are: `Sunday`, `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday` and `Saturday`
+* `days`: *Optional.* Run only on these day(s). Supported days are: `Sunday`, `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday` and `Saturday`
 
   e.g.
 
