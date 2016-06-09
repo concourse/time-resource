@@ -8,5 +8,7 @@ go build -o assets/check check/main.go
 go build -o assets/out out/main.go
 
 cp /usr/local/go/lib/time/zoneinfo.zip .
+apt-get -y update
+apt-get -y install unzip
 mkdir -p zoneinfo
 unzip -o zoneinfo.zip -d zoneinfo
