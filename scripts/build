@@ -6,3 +6,7 @@ mkdir -p assets
 go build -o assets/in in/main.go
 go build -o assets/check check/main.go
 go build -o assets/out out/main.go
+
+cp /usr/local/go/lib/time/zoneinfo.zip .
+mkdir -p zoneinfo
+unzip -o zoneinfo.zip -d zoneinfo
