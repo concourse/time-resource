@@ -12,13 +12,9 @@ level of precision is better left to other tools.
 * `interval`: *Optional.* The interval on which to report new versions. Valid
   values: `60s`, `90m`, `1h`.
 
-* `timezone`: *Optional.* The time zone in which start and stop times are specified. Values must be a location name corresponding to a file in the IANA Time Zone database,
-  such as `America/New_York`. Defaults to `UTC`.
-
 * `start` and `stop`: *Optional.* Only create new time versions between this
   time range. The supported formats for the times are: `3:04 PM -0800`, `3PM
-  -0800`, `3 PM -0800`, `15:04 -0800`, `1504 -0800`, `3:04 PM`, `3PM`, `3 PM`
-  , `15:04`, and `1504`.
+  -0800`, `3 PM -0800`, `15:04 -0800`, and `1504 -0800`.
 
   e.g.
 

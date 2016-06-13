@@ -54,11 +54,6 @@ func main() {
 		metadata = append(metadata, models.MetadataField{"interval", request.Source.Interval})
 	}
 
-	if request.Source.Location == "" {
-		request.Source.Location = "UTC"
-	}
-	metadata = append(metadata, models.MetadataField{"timezone", request.Source.Location})
-
 	if request.Source.Start != "" {
 		metadata = append(metadata, models.MetadataField{"start", request.Source.Start})
 	}

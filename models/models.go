@@ -36,7 +36,6 @@ type Source struct {
 	Interval string   `json:"interval"`
 	Start    string   `json:"start"`
 	Stop     string   `json:"stop"`
-	Location string   `json:"timezone"`
 	Days     []string `json:"days"`
 }
 
