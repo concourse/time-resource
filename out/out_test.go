@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -48,16 +49,18 @@ var _ = Describe("Out", func() {
 		})
 
 		JustBeforeEach(func() {
-			stdin, err := outCmd.StdinPipe()
+			stdin := new(bytes.Buffer)
+
+			err := json.NewEncoder(stdin).Encode(request)
 			Expect(err).NotTo(HaveOccurred())
+
+			outCmd.Stdin = stdin
 
 			session, err := gexec.Start(outCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = json.NewEncoder(stdin).Encode(request)
-			Expect(err).NotTo(HaveOccurred())
-
-			Eventually(session).Should(gexec.Exit(0))
+			<-session.Exited
+			Expect(session.ExitCode()).To(Equal(0))
 
 			err = json.Unmarshal(session.Out.Contents(), &response)
 			Expect(err).NotTo(HaveOccurred())
