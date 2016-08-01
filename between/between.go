@@ -17,6 +17,11 @@ func Between(startBase time.Time, stopBase time.Time, now time.Time) bool {
 	start := now.Truncate(day).Add(startDuration)
 	stop := now.Truncate(day).Add(stopDuration)
 
+	if start.After(now) {
+		start = start.AddDate(0, 0, -1)
+		stop = stop.AddDate(0, 0, -1)
+	}
+
 	if now.Equal(start) {
 		return true
 	}

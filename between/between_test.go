@@ -143,9 +143,16 @@ var _ = DescribeTable("Between", (testCase).Run,
 	}),
 
 	Entry("between the start and stop time but the compare time is in a different timezone", testCase{
-		start:         "2:00 AM -0600",
-		stop:          "6:00 AM -0600",
-		timeToCompare: "1:00 AM -0700",
+		start:         "00:01 AM -0700",
+		stop:          "11:59 PM -0700",
+		timeToCompare: "1:10 AM +0000",
 		result:        true,
+	}),
+
+	Entry("not between the start and stop time but the compare time is in a different timezone", testCase{
+		start:         "00:01 AM -0700",
+		stop:          "00:20 AM -0700",
+		timeToCompare: "07:10 AM +0100",
+		result:        false,
 	}),
 )
