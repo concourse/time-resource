@@ -41,8 +41,10 @@ var _ = Describe("Out", func() {
 		var response models.OutResponse
 
 		BeforeEach(func() {
+			interval := models.Interval(time.Second)
+
 			request = models.OutRequest{
-				Source: models.Source{Interval: "1s"},
+				Source: models.Source{Interval: &interval},
 			}
 
 			response = models.OutResponse{}

@@ -1,6 +1,7 @@
 package between_test
 
 import (
+	"encoding/json"
 	"time"
 
 	. "github.com/onsi/gomega"
@@ -8,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 
 	"github.com/concourse/time-resource/between"
+	"github.com/concourse/time-resource/models"
 )
 
 type testCase struct {
@@ -23,29 +25,26 @@ type testCase struct {
 const exampleFormat = "3:04 PM -0700"
 
 func (testCase testCase) Run() {
-	start, err := time.Parse(exampleFormat, testCase.start)
+	startJSON, err := json.Marshal(testCase.start)
 	Expect(err).NotTo(HaveOccurred())
 
-	stop, err := time.Parse(exampleFormat, testCase.stop)
+	stopJSON, err := json.Marshal(testCase.stop)
+	Expect(err).NotTo(HaveOccurred())
+
+	var start, stop models.TimeOfDay
+
+	err = json.Unmarshal(startJSON, &start)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = json.Unmarshal(stopJSON, &stop)
 	Expect(err).NotTo(HaveOccurred())
 
 	timeOfDay, err := time.Parse(exampleFormat, testCase.timeToCompare)
 	Expect(err).NotTo(HaveOccurred())
 
-	realTime := time.Now().In(timeOfDay.Location())
+	// realTime := time.Now().In(timeOfDay.Location())
 
-	timeToCompare := time.Date(
-		realTime.Year(),
-		realTime.Month(),
-		realTime.Day(),
-		timeOfDay.Hour(),
-		timeOfDay.Minute(),
-		timeOfDay.Second(),
-		timeOfDay.Nanosecond(),
-		timeOfDay.Location(),
-	).Add(testCase.extraTime)
-
-	result := between.Between(start, stop, timeToCompare)
+	result := between.Between(time.Duration(start), time.Duration(stop), timeOfDay.UTC())
 	Expect(result).To(Equal(testCase.result))
 }
 

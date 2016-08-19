@@ -15,12 +15,7 @@ func main() {
 		Time: currentTime,
 	}
 
-	metadata := models.Metadata{
-		{"time", currentTime.String()},
-	}
-
 	json.NewEncoder(os.Stdout).Encode(models.InResponse{
-		Version:  outVersion,
-		Metadata: metadata,
+		Version: outVersion,
 	})
 }

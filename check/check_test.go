@@ -25,48 +25,15 @@ var _ = Describe("Check", func() {
 		now = time.Now().UTC()
 	})
 
-	Describe("ParseTime", func() {
-		It("can parse many formats", func() {
-			expectedTime := time.Date(0, 1, 1, 21, 0, 0, 0, time.UTC)
-
-			formats := []string{
-				"1:00 PM -0800",
-				"1PM -0800",
-				"1 PM -0800",
-				"13:00 -0800",
-				"1300 -0800",
-			}
-
-			for _, format := range formats {
-				By("working with " + format)
-				parsedTime, err := ParseTime(format)
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(parsedTime.Equal(expectedTime)).To(BeTrue())
-			}
-		})
-	})
-
-	Describe("ParseWeekday", func() {
-		It("can parse a weekday", func() {
-			parsedWeekdays, err := ParseWeekdays([]string{"Monday", "Tuesday"})
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(parsedWeekdays).To(Equal([]time.Weekday{time.Monday, time.Tuesday}))
-		})
-
-		It("raise error if weekday can't be parsed", func() {
-			_, err := ParseWeekdays([]string{"Foo", "Tuesday"})
-
-			Expect(err).To(HaveOccurred())
-		})
+	BeforeEach(func() {
+		checkCmd = exec.Command(checkPath)
 	})
 
 	Describe("IsInDays", func() {
 		It("returns true if current day is in dayslist", func() {
-			daysList := []time.Weekday{
-				now.Weekday(),
-				now.Add(24 * time.Hour).Weekday(),
+			daysList := []models.Weekday{
+				models.Weekday(now.Weekday()),
+				models.Weekday(now.Add(24 * time.Hour).Weekday()),
 			}
 
 			Expect(IsInDays(now, daysList)).To(BeTrue())
@@ -77,17 +44,13 @@ var _ = Describe("Check", func() {
 		})
 
 		It("returns false if not in list", func() {
-			daysList := []time.Weekday{
-				now.Add(24 * time.Hour).Weekday(),
-				now.Add(48 * time.Hour).Weekday(),
+			daysList := []models.Weekday{
+				models.Weekday(now.Add(24 * time.Hour).Weekday()),
+				models.Weekday(now.Add(48 * time.Hour).Weekday()),
 			}
 
 			Expect(IsInDays(now, daysList)).To(BeFalse())
 		})
-	})
-
-	BeforeEach(func() {
-		checkCmd = exec.Command(checkPath)
 	})
 
 	Context("with invalid inputs", func() {
@@ -115,76 +78,29 @@ var _ = Describe("Check", func() {
 
 		Context("with a missing everything", func() {
 			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("one of 'interval' or 'between' must be specified"))
-				Eventually(session).Should(gexec.Exit(1))
-			})
-		})
-
-		Context("with an invalid start", func() {
-			BeforeEach(func() {
-				request.Source.Start = "not-a-time"
-				request.Source.Stop = "3:04 PM -0700"
-			})
-
-			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("invalid start time"))
-				Eventually(session).Should(gexec.Exit(1))
-			})
-		})
-
-		Context("with an invalid stop", func() {
-			BeforeEach(func() {
-				request.Source.Start = "3:04 PM -0700"
-				request.Source.Stop = "not-a-time"
-			})
-
-			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("invalid stop time"))
+				Eventually(session.Err).Should(gbytes.Say("must configure either 'interval' or 'start' and 'stop'"))
 				Eventually(session).Should(gexec.Exit(1))
 			})
 		})
 
 		Context("with a missing stop", func() {
 			BeforeEach(func() {
-				request.Source.Start = "3:04 PM -0700"
+				request.Source.Start = tod(3, 4, -7)
 			})
 
 			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("empty stop time!"))
+				Eventually(session.Err).Should(gbytes.Say("must configure 'stop' if 'start' is set"))
 				Eventually(session).Should(gexec.Exit(1))
 			})
 		})
 
 		Context("with a missing start", func() {
 			BeforeEach(func() {
-				request.Source.Stop = "3:04 PM -0700"
+				request.Source.Stop = tod(3, 4, -7)
 			})
 
 			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("empty start time!"))
-				Eventually(session).Should(gexec.Exit(1))
-			})
-		})
-
-		Context("with an invalid interval ", func() {
-			BeforeEach(func() {
-				request.Source.Interval = "not-an-interval"
-			})
-
-			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("invalid interval"))
-				Eventually(session).Should(gexec.Exit(1))
-			})
-		})
-
-		Context("with an invalid day ", func() {
-			BeforeEach(func() {
-				request.Source.Days = []string{"Foo", "Bar"}
-				request.Source.Interval = "1m"
-			})
-
-			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("invalid day 'Foo'"))
+				Eventually(session.Err).Should(gbytes.Say("must configure 'start' if 'stop' is set"))
 				Eventually(session).Should(gexec.Exit(1))
 			})
 		})
@@ -220,10 +136,9 @@ var _ = Describe("Check", func() {
 				BeforeEach(func() {
 					start := now.Add(-1 * time.Hour)
 					stop := now.Add(1 * time.Hour)
-					timeLayout := "3:04 PM -0700"
 
-					request.Source.Start = start.Format(timeLayout)
-					request.Source.Stop = stop.Format(timeLayout)
+					request.Source.Start = tod(start.Hour(), start.Minute(), 0)
+					request.Source.Stop = tod(stop.Hour(), stop.Minute(), 0)
 				})
 
 				Context("when no version is given", func() {
@@ -271,7 +186,7 @@ var _ = Describe("Check", func() {
 
 					Context("when an interval is specified", func() {
 						BeforeEach(func() {
-							request.Source.Interval = "1m"
+							request.Source.Interval = i(time.Minute)
 						})
 
 						Context("when no version is given", func() {
@@ -322,13 +237,10 @@ var _ = Describe("Check", func() {
 
 				Context("when the current day is specified", func() {
 					BeforeEach(func() {
-						request.Source.Days = []string{
-							now.Add(24 * time.Hour).Weekday().String(),
-							now.Add(48 * time.Hour).Weekday().String(),
+						request.Source.Days = []models.Weekday{
+							models.Weekday(now.Weekday()),
+							models.Weekday(now.Add(48 * time.Hour).Weekday()),
 						}
-						request.Source.Days = []string{
-							now.Weekday().String(),
-							now.Add(48 * time.Hour).Weekday().String()}
 					})
 
 					It("outputs a version containing the current time", func() {
@@ -339,9 +251,9 @@ var _ = Describe("Check", func() {
 
 				Context("when we are out of the specified day", func() {
 					BeforeEach(func() {
-						request.Source.Days = []string{
-							now.Add(24 * time.Hour).Weekday().String(),
-							now.Add(48 * time.Hour).Weekday().String(),
+						request.Source.Days = []models.Weekday{
+							models.Weekday(now.Add(24 * time.Hour).Weekday()),
+							models.Weekday(now.Add(48 * time.Hour).Weekday()),
 						}
 					})
 
@@ -355,10 +267,9 @@ var _ = Describe("Check", func() {
 				BeforeEach(func() {
 					start := now.Add(6 * time.Hour)
 					stop := now.Add(7 * time.Hour)
-					timeLayout := "3:04 PM -0700"
 
-					request.Source.Start = start.Format(timeLayout)
-					request.Source.Stop = stop.Format(timeLayout)
+					request.Source.Start = tod(start.Hour(), start.Minute(), 0)
+					request.Source.Stop = tod(stop.Hour(), stop.Minute(), 0)
 				})
 
 				Context("when no version is given", func() {
@@ -371,12 +282,11 @@ var _ = Describe("Check", func() {
 					BeforeEach(func() {
 						start := now.Add(6 * time.Hour)
 						stop := now.Add(7 * time.Hour)
-						timeLayout := "3:04 PM -0700"
 
-						request.Source.Start = start.Format(timeLayout)
-						request.Source.Stop = stop.Format(timeLayout)
+						request.Source.Start = tod(start.Hour(), start.Minute(), 0)
+						request.Source.Stop = tod(stop.Hour(), stop.Minute(), 0)
 
-						request.Source.Interval = "1m"
+						request.Source.Interval = i(time.Minute)
 					})
 
 					It("does not output any versions", func() {
@@ -388,7 +298,7 @@ var _ = Describe("Check", func() {
 
 		Context("when an interval is specified", func() {
 			BeforeEach(func() {
-				request.Source.Interval = "1m"
+				request.Source.Interval = i(time.Minute)
 			})
 
 			Context("when no version is given", func() {
@@ -437,3 +347,17 @@ var _ = Describe("Check", func() {
 		})
 	})
 })
+
+func tod(hours, minutes, offset int) *models.TimeOfDay {
+	d := time.Duration(hours)*time.Hour + time.Duration(minutes)*time.Minute
+	d += time.Duration(offset) * time.Hour
+	if d < 0 {
+		d += 12 * time.Hour
+	}
+
+	return (*models.TimeOfDay)(&d)
+}
+
+func i(d time.Duration) *models.Interval {
+	return (*models.Interval)(&d)
+}
