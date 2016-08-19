@@ -113,6 +113,15 @@ var _ = DescribeTable("Between", (testCase).Run,
 		result:        true,
 	}),
 
+	// This is a regression test against how we used to determine the day offset,
+	// which was by subtracting from midnight in UTC. Pretty funky.
+	Entry("start and stop whose time of day plus timezone offset results in more than a day compared to midnight UTC", testCase{
+		start:         "11:00 PM -0700",
+		stop:          "11:30 PM -0700",
+		timeToCompare: "11:15 PM -0700",
+		result:        true,
+	}),
+
 	// Our date parsing library always returns the date as 1/1 since we only
 	// give it a time. If the stop time is before the start time then assume
 	// that the stop is in the next day.
