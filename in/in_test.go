@@ -42,6 +42,7 @@ var _ = Describe("In", func() {
 
 		BeforeEach(func() {
 			interval := models.Interval(time.Second)
+
 			request = models.InRequest{
 				Version: models.Version{Time: time.Now()},
 				Source:  models.Source{Interval: &interval},

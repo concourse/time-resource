@@ -1,4 +1,4 @@
-package between_test
+package lord_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestBetween(t *testing.T) {
+func TestLord(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Between Suite")
+	RunSpecs(t, "Lord Suite")
 }

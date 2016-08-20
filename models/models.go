@@ -43,6 +43,7 @@ type Source struct {
 	Start    *TimeOfDay `json:"start"`
 	Stop     *TimeOfDay `json:"stop"`
 	Days     []Weekday  `json:"days"`
+	Location *Location  `json:"location"`
 }
 
 func (source Source) Validate() error {
@@ -91,6 +92,29 @@ func (i Interval) MarshalJSON() ([]byte, error) {
 	return json.Marshal(time.Duration(i).String())
 }
 
+type Location time.Location
+
+func (l *Location) UnmarshalJSON(payload []byte) error {
+	var locStr string
+	err := json.Unmarshal(payload, &locStr)
+	if err != nil {
+		return err
+	}
+
+	location, err := time.LoadLocation(locStr)
+	if err != nil {
+		return err
+	}
+
+	*l = Location(*location)
+
+	return nil
+}
+
+func (l Location) MarshalJSON() ([]byte, error) {
+	return json.Marshal((*time.Location)(&l).String())
+}
+
 var timeFormats []string
 
 func init() {
@@ -99,9 +123,18 @@ func init() {
 	timeFormats = append(timeFormats, "3 PM -0700")
 	timeFormats = append(timeFormats, "15:04 -0700")
 	timeFormats = append(timeFormats, "1504 -0700")
+	timeFormats = append(timeFormats, "3:04 PM")
+	timeFormats = append(timeFormats, "3PM")
+	timeFormats = append(timeFormats, "3 PM")
+	timeFormats = append(timeFormats, "15:04")
+	timeFormats = append(timeFormats, "1504")
 }
 
 type TimeOfDay time.Duration
+
+func NewTimeOfDay(t time.Time) TimeOfDay {
+	return TimeOfDay(time.Duration(t.Hour())*time.Hour + time.Duration(t.Minute())*time.Minute)
+}
 
 func (tod *TimeOfDay) UnmarshalJSON(payload []byte) error {
 	var timeStr string
@@ -121,28 +154,53 @@ func (tod *TimeOfDay) UnmarshalJSON(payload []byte) error {
 		return fmt.Errorf("invalid time format: %s, must be one of: %s", timeStr, strings.Join(timeFormats, ", "))
 	}
 
-	t = t.UTC()
-
-	*tod = TimeOfDay(time.Duration(t.Hour())*time.Hour + time.Duration(t.Minute())*time.Minute)
+	*tod = NewTimeOfDay(t.UTC())
 
 	return nil
 }
 
 func (tod TimeOfDay) MarshalJSON() ([]byte, error) {
-	hours := tod / TimeOfDay(time.Hour)
-	minutes := tod % TimeOfDay(time.Hour) / TimeOfDay(time.Minute)
-	return json.Marshal(fmt.Sprintf("%d:%02d -0000", hours, minutes))
+	return json.Marshal(tod.String())
+}
+
+func (tod TimeOfDay) Hour() int {
+	return int(time.Duration(tod) / time.Hour)
+}
+
+func (tod TimeOfDay) Minute() int {
+	return int(time.Duration(tod) % time.Hour / time.Minute)
+}
+
+func (tod TimeOfDay) In(loc *Location) TimeOfDay {
+	if loc == nil {
+		return tod
+	}
+
+	// without having at least the year, month, and day set, there's no real way
+	// to reason about timezones, as they take effect by laws changing over time
+	referenceTime := time.Now()
+
+	t := time.Date(
+		referenceTime.Year(),
+		referenceTime.Month(),
+		referenceTime.Day(),
+		tod.Hour(),
+		tod.Minute(),
+		0,
+		0,
+		(*time.Location)(loc),
+	)
+
+	return NewTimeOfDay(t.UTC())
+}
+
+func (tod TimeOfDay) String() string {
+	return fmt.Sprintf("%d:%02d", tod.Hour(), tod.Minute())
 }
 
 type Weekday time.Weekday
 
-func (x *Weekday) UnmarshalJSON(payload []byte) error {
-	var wdStr string
-	err := json.Unmarshal(payload, &wdStr)
-	if err != nil {
-		return err
-	}
-
+func ParseWeekday(wdStr string) (Weekday, error) {
 	var wd time.Weekday
 	switch wdStr {
 	case "Sunday":
@@ -160,10 +218,25 @@ func (x *Weekday) UnmarshalJSON(payload []byte) error {
 	case "Saturday":
 		wd = time.Saturday
 	default:
-		return fmt.Errorf("unknown weekday: %s", payload)
+		return 0, fmt.Errorf("unknown weekday: %s", wdStr)
 	}
 
-	*x = Weekday(wd)
+	return Weekday(wd), nil
+}
+
+func (x *Weekday) UnmarshalJSON(payload []byte) error {
+	var wdStr string
+	err := json.Unmarshal(payload, &wdStr)
+	if err != nil {
+		return err
+	}
+
+	wd, err := ParseWeekday(wdStr)
+	if err != nil {
+		return err
+	}
+
+	*x = wd
 
 	return nil
 }

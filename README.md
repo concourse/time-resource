@@ -12,25 +12,31 @@ level of precision is better left to other tools.
 * `interval`: *Optional.* The interval on which to report new versions. Valid
   values: `60s`, `90m`, `1h`.
 
+* `location`: *Optional. Default `UTC`.* The
+  [location](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) in
+  which to interpret `start`, `stop`, and `days`.
+
 * `start` and `stop`: *Optional.* Only create new time versions between this
-  time range. The supported formats for the times are: `3:04 PM -0800`, `3PM
-  -0800`, `3 PM -0800`, `15:04 -0800`, and `1504 -0800`.
+  time range. The supported formats for the times are: `3:04 PM`, `3PM`, `3
+  PM`, `15:04`, and `1504`.
 
   e.g.
 
   ```
-  start: 8:00 +0100
-  stop: 9:00 +0100
+  start: 8:00 PM
+  stop: 9:00 PM
   ```
 
-* `days`: *Optional.* Run only on these day(s). Supported days are: `Sunday`, `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday` and `Saturday`
+  **Deprecation: an offset may be appended, e.g. `+0700` or `-0400`, but you
+  should use `location` instead.**
+
+* `days`: *Optional.* Run only on these day(s). Supported days are: `Sunday`,
+  `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday` and `Saturday`.
 
   e.g.
 
   ```
-  days:
-    - Monday
-    - Wednesday
+  days: [Monday, Wednesday]
   ```
 
 These can be combined to emit a new version on an interval during a particular
