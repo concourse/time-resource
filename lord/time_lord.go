@@ -76,11 +76,7 @@ func (tl TimeLord) isInRange(now time.Time) bool {
 	stopOffset := time.Duration(tl.Stop.In(tl.Location))
 
 	if stopOffset < startOffset {
-		if startOffset > (day / 2) {
-			startOffset -= day
-		} else {
-			stopOffset += day
-		}
+		return tl.yesterday().isInRange(now) || tl.tomorrow().isInRange(now)
 	}
 
 	start := now.Truncate(day).Add(startOffset)
@@ -95,4 +91,18 @@ func (tl TimeLord) isInRange(now time.Time) bool {
 	}
 
 	return false
+}
+
+func (tl TimeLord) yesterday() TimeLord {
+	yesterday := tl
+	startOffset := time.Duration(*tl.Start) - day
+	yesterday.Start = (*models.TimeOfDay)(&startOffset)
+	return yesterday
+}
+
+func (tl TimeLord) tomorrow() TimeLord {
+	tomorrow := tl
+	stopOffset := time.Duration(*tl.Stop) + day
+	tomorrow.Stop = (*models.TimeOfDay)(&stopOffset)
+	return tomorrow
 }

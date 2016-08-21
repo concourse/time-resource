@@ -178,6 +178,13 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		now:    "1:00 AM -0700",
 		result: true,
 	}),
+
+	Entry("covering almost a full day", testCase{
+		start:  "12:01 AM -0700",
+		stop:   "11:59 PM -0700",
+		now:    "1:10 AM +0000",
+		result: true,
+	}),
 )
 
 var _ = DescribeTable("A range with a location and no previous time", (testCase).Run,
