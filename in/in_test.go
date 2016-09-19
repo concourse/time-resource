@@ -61,7 +61,8 @@ var _ = Describe("In", func() {
 			err = json.NewEncoder(stdin).Encode(request)
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(session).Should(gexec.Exit(0))
+			<-session.Exited
+			Expect(session.ExitCode()).To(Equal(0))
 
 			err = json.Unmarshal(session.Out.Contents(), &response)
 			Expect(err).NotTo(HaveOccurred())

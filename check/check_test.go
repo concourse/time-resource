@@ -53,7 +53,8 @@ var _ = Describe("Check", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(session).Should(gexec.Exit(0))
+			<-session.Exited
+			Expect(session.ExitCode()).To(Equal(0))
 
 			err = json.Unmarshal(session.Out.Contents(), &response)
 			Expect(err).NotTo(HaveOccurred())
@@ -521,8 +522,10 @@ var _ = Describe("Check", func() {
 
 		Context("with a missing everything", func() {
 			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("must configure either 'interval' or 'start' and 'stop'"))
-				Eventually(session).Should(gexec.Exit(1))
+				<-session.Exited
+
+				Expect(session.Err).To(gbytes.Say("must configure either 'interval' or 'start' and 'stop'"))
+				Expect(session.ExitCode()).To(Equal(1))
 			})
 		})
 
@@ -532,8 +535,10 @@ var _ = Describe("Check", func() {
 			})
 
 			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("must configure 'stop' if 'start' is set"))
-				Eventually(session).Should(gexec.Exit(1))
+				<-session.Exited
+
+				Expect(session.Err).To(gbytes.Say("must configure 'stop' if 'start' is set"))
+				Expect(session.ExitCode()).To(Equal(1))
 			})
 		})
 
@@ -543,8 +548,10 @@ var _ = Describe("Check", func() {
 			})
 
 			It("returns an error", func() {
-				Eventually(session.Err).Should(gbytes.Say("must configure 'start' if 'stop' is set"))
-				Eventually(session).Should(gexec.Exit(1))
+				<-session.Exited
+
+				Expect(session.Err).To(gbytes.Say("must configure 'start' if 'stop' is set"))
+				Expect(session.ExitCode()).To(Equal(1))
 			})
 		})
 	})
