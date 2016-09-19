@@ -75,12 +75,16 @@ func (tl TimeLord) isInRange(now time.Time) bool {
 	startOffset := time.Duration(tl.Start.In(tl.Location))
 	stopOffset := time.Duration(tl.Stop.In(tl.Location))
 
-	if stopOffset < startOffset {
-		return tl.yesterday().isInRange(now) || tl.tomorrow().isInRange(now)
-	}
-
 	start := now.Truncate(day).Add(startOffset)
 	stop := now.Truncate(day).Add(stopOffset)
+
+	return tl.isBetween(now, start, stop)
+}
+
+func (tl TimeLord) isBetween(now time.Time, start time.Time, stop time.Time) bool {
+	if stop.Before(start) {
+		return tl.isBetween(now, start.AddDate(0, 0, -1), stop) || tl.isBetween(now, start, stop.AddDate(0, 0, 1))
+	}
 
 	if now.Equal(start) {
 		return true
