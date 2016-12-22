@@ -102,8 +102,9 @@ resources:
 - name: after-midnight
   type: time
   source:
-    start: 12:00 AM -0700
-    stop: 1:00 AM -0700
+    start: 12:00 AM
+    stop: 1:00 AM
+    location: Asia/Sakhalin
 
 jobs:
 - name: something-after-midnight
@@ -122,8 +123,9 @@ resources:
   type: time
   source:
     interval: 5m
-    start: 12:00 AM -0700
-    stop: 1:00 AM -0700
+    start: 12:00 AM
+    stop: 1:00 AM
+    location: America/Bahia_Banderas
 
 jobs:
 - name: something-every-5m-during-midnight-hour
