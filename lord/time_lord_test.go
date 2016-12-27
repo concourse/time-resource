@@ -222,7 +222,7 @@ var _ = DescribeTable("A range with a location and no previous time", (testCase)
 	}),
 	Entry("between the start and stop time in a given location and on a matching day compared to UTC", testCase{
 		location: "America/Indiana/Indianapolis",
-		start:    "10:00 PM",
+		start:    "9:00 PM",
 		stop:     "11:00 PM",
 		days:     []time.Weekday{time.Wednesday},
 		now:      "2:00 AM +0000",
