@@ -33,7 +33,12 @@ func (tl TimeLord) Check(now time.Time) bool {
 			return true
 		}
 	} else {
-		if now.UTC().YearDay() > tl.PreviousTime.UTC().YearDay() {
+		if now.UTC().Year() > tl.PreviousTime.UTC().Year() {
+			return true
+		}
+
+		if now.UTC().Year() == tl.PreviousTime.UTC().Year() &&
+			now.UTC().YearDay() > tl.PreviousTime.UTC().YearDay() {
 			return true
 		}
 	}

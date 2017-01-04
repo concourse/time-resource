@@ -124,6 +124,19 @@ var _ = Describe("Check", func() {
 						})
 					})
 
+					Context("when the resource was triggered last year near the end of the time frame", func() {
+						BeforeEach(func() {
+							prev = now.Add(-24 * time.Hour * 365)
+							version = &models.Version{Time: prev}
+						})
+
+						It("outputs a version containing the current time and supplied version", func() {
+							Expect(response).To(HaveLen(2))
+							Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
+							Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+						})
+					})
+
 					Context("when the resource was triggered yesterday in the current time frame", func() {
 						BeforeEach(func() {
 							prev = now.Add(-24 * time.Hour)
