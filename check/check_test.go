@@ -126,7 +126,7 @@ var _ = Describe("Check", func() {
 
 					Context("when the resource was triggered last year near the end of the time frame", func() {
 						BeforeEach(func() {
-							prev = now.Add(-24 * time.Hour * 365)
+							prev = now.AddDate(-1, 0, 0)
 							version = &models.Version{Time: prev}
 						})
 
