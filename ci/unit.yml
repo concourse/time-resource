@@ -6,7 +6,7 @@ image_resource:
     repository: concourse/static-golang
 
 inputs:
-- name: time-resource
+- name: resource-repo
   path: gopath/src/github.com/concourse/time-resource
 
 run:

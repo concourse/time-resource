@@ -8,7 +8,7 @@ image_resource:
     tag: alpine
 
 inputs:
-- name: time-resource
+- name: resource-repo
   path: gopath/src/github.com/concourse/time-resource
 
 outputs:
