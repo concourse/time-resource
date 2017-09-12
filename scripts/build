@@ -1,6 +1,4 @@
-#!/bin/bash
-
-set -e -u -x
+#!/bin/sh -ex
 
 export GOPATH=$PWD/gopath
 export PATH=$GOPATH/bin:$PATH
@@ -12,7 +10,7 @@ export PATH=${PWD}/Godeps/_workspace/bin:$PATH
 
 go install github.com/onsi/ginkgo/ginkgo
 
-BUILD_DIR=$PWD/built-resource
+export BUILD_DIR=$PWD/built-resource
 mkdir -p assets
 go build -o assets/in in/main.go
 go build -o assets/check check/main.go
