@@ -4,7 +4,8 @@ platform: linux
 image_resource:
   type: docker-image
   source:
-    repository: concourse/static-golang
+    repository: golang
+    tag: alpine
 
 inputs:
 - name: time-resource
@@ -14,4 +15,4 @@ outputs:
 - name: built-resource
 
 run:
-  path: gopath/src/github.com/concourse/time-resource/scripts/ci
+  path: gopath/src/github.com/concourse/time-resource/scripts/build
