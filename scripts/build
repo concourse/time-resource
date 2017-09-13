@@ -3,6 +3,7 @@
 export GOPATH=$PWD/gopath
 export PATH=$GOPATH/bin:$PATH
 
+export BUILD_DIR=$PWD/built-resource
 cd $GOPATH/src/github.com/concourse/time-resource
 
 export GOPATH=${PWD}/Godeps/_workspace:$GOPATH
@@ -10,7 +11,6 @@ export PATH=${PWD}/Godeps/_workspace/bin:$PATH
 
 go install github.com/onsi/ginkgo/ginkgo
 
-export BUILD_DIR=$PWD/built-resource
 mkdir -p assets
 go build -o assets/in in/main.go
 go build -o assets/check check/main.go
