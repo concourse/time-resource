@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -13,8 +14,12 @@ var checkPath string
 var _ = BeforeSuite(func() {
 	var err error
 
-	checkPath, err = gexec.Build("github.com/concourse/time-resource/check")
-	Expect(err).NotTo(HaveOccurred())
+	if _, err = os.Stat("/opt/resource/check"); err == nil {
+		checkPath = "/opt/resource/check"
+	} else {
+		checkPath, err = gexec.Build("github.com/concourse/time-resource/check")
+		Expect(err).NotTo(HaveOccurred())
+	}
 })
 
 var _ = AfterSuite(func() {
