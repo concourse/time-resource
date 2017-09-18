@@ -1,4 +1,4 @@
-FROM golang as builder
+FROM golang:alpine as builder
 COPY . /go/src/github.com/concourse/time-resource
 ENV CGO_ENABLED 0
 ENV GOPATH /go/src/github.com/concourse/time-resource/Godeps/_workspace:${GOPATH}
