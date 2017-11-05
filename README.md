@@ -12,6 +12,9 @@ level of precision is better left to other tools.
 * `interval`: *Optional.* The interval on which to report new versions. Valid
   values: `60s`, `90m`, `1h`.
 
+* `skew`: *Optional.* A maximum bound of time by which to skew the trigger
+  time. Valid values: `60s`, `90m`, `1h`. Must be used with `interval`.
+
 * `location`: *Optional. Default `UTC`.* The
   [location](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) in
   which to interpret `start`, `stop`, and `days`.
@@ -90,6 +93,25 @@ jobs:
 - name: something-every-5m
   plan:
   - get: 5m
+    trigger: true
+  - task: something
+    config: # ...
+```
+
+### Periodic trigger with some skewing
+
+```yaml
+resources:
+- name: 5-ish-min
+  type: time
+  source:
+    interval: 5m
+    skew: 1m
+
+jobs:
+- name: something-every-4-to-6m
+  plan:
+  - get: 5-ish-min
     trigger: true
   - task: something
     config: # ...

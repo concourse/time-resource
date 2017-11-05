@@ -34,6 +34,7 @@ func main() {
 		Start:        request.Source.Start,
 		Stop:         request.Source.Stop,
 		Interval:     request.Source.Interval,
+		Skew:         request.Source.Skew,
 		Days:         request.Source.Days,
 	}
 

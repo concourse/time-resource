@@ -1,6 +1,7 @@
 package lord
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/concourse/time-resource/models"
@@ -12,6 +13,7 @@ type TimeLord struct {
 	Start        *models.TimeOfDay
 	Stop         *models.TimeOfDay
 	Interval     *models.Interval
+	Skew         *models.Interval
 	Days         []models.Weekday
 }
 
@@ -29,7 +31,11 @@ func (tl TimeLord) Check(now time.Time) bool {
 	}
 
 	if tl.Interval != nil {
-		if now.Sub(tl.PreviousTime) >= time.Duration(*tl.Interval) {
+		skew := time.Duration(0)
+		if tl.Skew != nil {
+			skew = time.Duration(rand.Intn(int(time.Duration(*tl.Interval).Seconds())))
+		}
+		if now.Sub(tl.PreviousTime)+skew >= time.Duration(*tl.Interval) {
 			return true
 		}
 	} else {
