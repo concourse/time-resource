@@ -31,8 +31,8 @@ type testCase struct {
 	result bool
 }
 
-const exampleFormatWithTZ = "3:04 PM -0700"
-const exampleFormatWithoutTZ = "3:04 PM"
+const exampleFormatWithTZ = "3:04 PM -0700 2006"
+const exampleFormatWithoutTZ = "3:04 PM 2006"
 
 func (tc testCase) Run() {
 	var tl lord.TimeLord
@@ -52,6 +52,7 @@ func (tc testCase) Run() {
 	}
 
 	if tc.start != "" {
+		tc.start += " 2018"
 		startTime, err := time.Parse(format, tc.start)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -60,6 +61,7 @@ func (tc testCase) Run() {
 	}
 
 	if tc.stop != "" {
+		tc.stop += " 2018"
 		stopTime, err := time.Parse(format, tc.stop)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -79,7 +81,7 @@ func (tc testCase) Run() {
 		tl.Days[i] = models.Weekday(d)
 	}
 
-	now, err := time.Parse(exampleFormatWithTZ, tc.now)
+	now, err := time.Parse(exampleFormatWithTZ, tc.now + " 2018")
 	Expect(err).NotTo(HaveOccurred())
 
 	for now.Weekday() != tc.nowDay {
@@ -87,6 +89,7 @@ func (tc testCase) Run() {
 	}
 
 	if tc.prev != "" {
+		tc.prev += " 2018"
 		prev, err := time.Parse(exampleFormatWithTZ, tc.prev)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -171,6 +174,12 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		now:    "1:00 AM +0000",
 		result: true,
 	}),
+	Entry("between the start and stop time but the stop time is before the start time and now is in the stop day", testCase{
+		start:  "8:00 PM +0000",
+		stop:   "8:00 AM +0000",
+		now:    "7:00 AM +0000",
+		result: true,
+	}),
 
 	Entry("between the start and stop time but the compare time is in a different timezone", testCase{
 		start:  "2:00 AM -0600",
@@ -184,6 +193,48 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		stop:   "11:59 PM -0700",
 		now:    "1:10 AM +0000",
 		result: true,
+	}),
+)
+
+var _ = DescribeTable("A range with a previous time", (testCase).Run,
+	Entry("an hour before start", testCase{
+		start:  "2:00 AM +0000",
+		stop:   "4:00 AM +0000",
+		now:    "3:00 AM +0000",
+		prev:   "1:00 AM +0000",
+		result: true,
+	}),
+	Entry("with stop before start and prev in the start day and now in the stop day", testCase{
+		start:  "10:00 AM +0000",
+		stop:   "5:00 AM +0000",
+		now:    "4:00 AM +0000",
+		nowDay: time.Tuesday,
+		prev:   "11:00 AM +0000",
+		prevDay: time.Monday,
+		result: false,
+	}),
+	Entry("with stop before start and prev outside the range and now in the stop day", testCase{
+		start:  "10:00 AM +0000",
+		stop:   "5:00 AM +0000",
+		now:    "4:00 AM +0000",
+		nowDay: time.Tuesday,
+		prev:   "9:00 AM +0000",
+		prevDay: time.Monday,
+		result: true,
+	}),
+	Entry("after now and in range on same day as now", testCase{
+		start:  "2:00 AM +0000",
+		stop:   "4:00 AM +0000",
+		now:    "3:00 AM +0000",
+		prev:   "3:30 AM +0000",
+		result: false,
+	}),
+	Entry("after now and out of range on same day as now", testCase{
+		start:  "2:00 AM +0000",
+		stop:   "4:00 AM +0000",
+		now:    "3:00 AM +0000",
+		prev:   "5:00 AM +0000",
+		result: false,
 	}),
 )
 
