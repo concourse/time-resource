@@ -171,29 +171,6 @@ func (tod TimeOfDay) Minute() int {
 	return int(time.Duration(tod) % time.Hour / time.Minute)
 }
 
-func (tod TimeOfDay) In(loc *Location) TimeOfDay {
-	if loc == nil {
-		return tod
-	}
-
-	// without having at least the year, month, and day set, there's no real way
-	// to reason about timezones, as they take effect by laws changing over time
-	referenceTime := time.Now()
-
-	t := time.Date(
-		referenceTime.Year(),
-		referenceTime.Month(),
-		referenceTime.Day(),
-		tod.Hour(),
-		tod.Minute(),
-		0,
-		0,
-		(*time.Location)(loc),
-	)
-
-	return NewTimeOfDay(t.UTC())
-}
-
 func (tod TimeOfDay) String() string {
 	return fmt.Sprintf("%d:%02d", tod.Hour(), tod.Minute())
 }
