@@ -1,12 +1,12 @@
 package main_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/concourse/time-resource/models"
@@ -20,6 +20,7 @@ var _ = Describe("Out", func() {
 	var source string
 
 	var outCmd *exec.Cmd
+	var now time.Time
 
 	BeforeEach(func() {
 		var err error
@@ -30,6 +31,7 @@ var _ = Describe("Out", func() {
 		source = path.Join(tmpdir, "out-dir")
 
 		outCmd = exec.Command(outPath, source)
+		now = time.Now().UTC()
 	})
 
 	AfterEach(func() {
@@ -37,28 +39,24 @@ var _ = Describe("Out", func() {
 	})
 
 	Context("when executed", func() {
-		var request models.OutRequest
+		var source map[string]interface{}
 		var response models.OutResponse
 
 		BeforeEach(func() {
-			interval := models.Interval(time.Second)
-
-			request = models.OutRequest{
-				Source: models.Source{Interval: &interval},
-			}
-
+			source = map[string]interface{}{}
 			response = models.OutResponse{}
 		})
 
 		JustBeforeEach(func() {
-			stdin := new(bytes.Buffer)
-
-			err := json.NewEncoder(stdin).Encode(request)
+			stdin, err := outCmd.StdinPipe()
 			Expect(err).NotTo(HaveOccurred())
 
-			outCmd.Stdin = stdin
-
 			session, err := gexec.Start(outCmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = json.NewEncoder(stdin).Encode(map[string]interface{}{
+				"source": source,
+			})
 			Expect(err).NotTo(HaveOccurred())
 
 			<-session.Exited
@@ -68,8 +66,29 @@ var _ = Describe("Out", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("reports the current time as the version", func() {
-			Expect(response.Version.Time).To(BeTemporally("~", time.Now(), time.Second))
+		Context("when a location is specified", func() {
+			var loc *time.Location
+
+			BeforeEach(func() {
+				var err error
+				loc, err = time.LoadLocation("America/Indiana/Indianapolis")
+				Expect(err).ToNot(HaveOccurred())
+
+				source["location"] = loc.String()
+
+				now = now.In(loc)
+			})
+
+			It("reports specified location's current time(offset: -0500) as the version", func() {
+				contained := strings.Contains(response.Version.Time.String(), "-0500")
+				Expect(contained).To(BeTrue())
+			})
+		})
+		Context("when a location is not specified", func() {
+			It("reports the current time(offset: 0000) as the version", func() {
+				contained := strings.Contains(response.Version.Time.String(), "0000")
+				Expect(contained).To(BeTrue())
+			})
 		})
 	})
 })
