@@ -28,9 +28,14 @@ func main() {
 	previousTime := request.Version.Time
 	currentTime := time.Now().UTC()
 
+	specifiedLocation := request.Source.Location
+	if specifiedLocation != nil {
+		currentTime = currentTime.In((*time.Location)(specifiedLocation))
+	}
+
 	tl := lord.TimeLord{
 		PreviousTime: previousTime,
-		Location:     request.Source.Location,
+		Location:     specifiedLocation,
 		Start:        request.Source.Start,
 		Stop:         request.Source.Stop,
 		Interval:     request.Source.Interval,

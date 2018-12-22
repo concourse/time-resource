@@ -11,6 +11,7 @@ import (
 func main() {
 	currentTime := time.Now().UTC()
 
+
 	outVersion := models.Version{
 		Time: currentTime,
 	}
