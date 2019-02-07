@@ -1,4 +1,4 @@
-FROM golang:alpine as builder
+FROM concourse/golang-builder AS builder
 COPY . /go/src/github.com/concourse/time-resource
 ENV CGO_ENABLED 0
 ENV GOPATH /go/src/github.com/concourse/time-resource/Godeps/_workspace:${GOPATH}
@@ -10,8 +10,9 @@ RUN set -e; for pkg in $(go list ./...); do \
 		go test -o "/tests/$(basename $pkg).test" -c $pkg; \
 	done
 
-FROM alpine:edge AS resource
-RUN apk add --update bash tzdata
+FROM ubuntu:bionic AS resource
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /assets /opt/resource
 
 FROM resource AS tests
