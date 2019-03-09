@@ -15,7 +15,7 @@ func main() {
 		Time: currentTime,
 	}
 
-	json.NewEncoder(os.Stdout).Encode(models.InResponse{
+	json.NewEncoder(os.Stdout).Encode(models.OutResponse{
 		Version: outVersion,
 	})
 }
