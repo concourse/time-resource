@@ -79,8 +79,8 @@ var _ = Describe("Out", func() {
 				now = now.In(loc)
 			})
 
-			It("reports specified location's current time(offset: -0500) as the version", func() {
-				contained := strings.Contains(response.Version.Time.String(), "-0500")
+			It("reports specified location's current time(offset: -0400) as the version", func() {
+				contained := strings.Contains(response.Version.Time.String(), "-0400")
 				Expect(contained).To(BeTrue())
 			})
 		})
