@@ -1,7 +1,6 @@
 FROM concourse/golang-builder AS builder
 COPY . /go/src/github.com/concourse/time-resource
 ENV CGO_ENABLED 0
-RUN echo $GOPATH
 RUN go build -o /assets/out github.com/concourse/time-resource/out
 RUN go build -o /assets/in github.com/concourse/time-resource/in
 RUN go build -o /assets/check github.com/concourse/time-resource/check
