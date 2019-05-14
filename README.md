@@ -144,7 +144,7 @@ jobs:
   work.
 * docker is *required* - version 17.06.x is tested; earlier versions may also
   work.
-* godep is used for dependency management of the golang packages.
+* go mod is used for dependency management of the golang packages.
 
 ### Running the tests
 
