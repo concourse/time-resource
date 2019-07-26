@@ -18,6 +18,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	timeAfter := request.Params.After
+	if timeAfter != nil {
+		time.Sleep(*(*time.Duration)(timeAfter))
+	}
+
 	currentTime := time.Now().UTC()
 	specifiedLocation := request.Source.Location
 	if specifiedLocation != nil {

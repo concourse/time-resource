@@ -23,7 +23,12 @@ type InResponse struct {
 }
 
 type OutRequest struct {
-	Source Source `json:"source"`
+	Source Source    `json:"source"`
+	Params OutParams `json:"params"`
+}
+
+type OutParams struct {
+	After *Interval `json:"after"`
 }
 
 type OutResponse struct {
