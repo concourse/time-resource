@@ -39,11 +39,14 @@ var _ = Describe("Out", func() {
 	})
 
 	Context("when executed", func() {
-		var source map[string]interface{}
+		var request models.OutRequest
 		var response models.OutResponse
 
 		BeforeEach(func() {
-			source = map[string]interface{}{}
+			request = models.OutRequest{
+				Source: models.Source{},
+				Params: models.OutParams{},
+			}
 			response = models.OutResponse{}
 		})
 
@@ -54,9 +57,7 @@ var _ = Describe("Out", func() {
 			session, err := gexec.Start(outCmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = json.NewEncoder(stdin).Encode(map[string]interface{}{
-				"source": source,
-			})
+			err = json.NewEncoder(stdin).Encode(request)
 			Expect(err).NotTo(HaveOccurred())
 
 			<-session.Exited
@@ -74,7 +75,7 @@ var _ = Describe("Out", func() {
 				loc, err = time.LoadLocation("America/Indiana/Indianapolis")
 				Expect(err).ToNot(HaveOccurred())
 
-				source["location"] = loc.String()
+				request.Source.Location = (*models.Location)(loc)
 
 				now = now.In(loc)
 			})
@@ -92,6 +93,18 @@ var _ = Describe("Out", func() {
 				// 2019-04-03 18:53:10.964705 +0000 UTC
 				contained := strings.Contains(response.Version.Time.String(), "0000")
 				Expect(contained).To(BeTrue())
+			})
+		})
+		Context("when a wait is specified", func() {
+			duration := time.Duration(1 * time.Minute)
+
+			BeforeEach(func() {
+				request.Params.After = (*models.Interval)(&duration)
+			})
+
+			It("immediately outputs a version containing the future time", func() {
+				Expect(now.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+				Expect(response.Version.Time.Unix()).To(BeNumerically(">", time.Now().Unix(), duration))
 			})
 		})
 	})

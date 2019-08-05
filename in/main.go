@@ -42,6 +42,10 @@ func main() {
 		versionTime = time.Now()
 	}
 
+	if request.Params.Wait {
+		time.Sleep(time.Until(versionTime))
+	}
+
 	inVersion := request.Version
 	inVersion.Time = versionTime
 

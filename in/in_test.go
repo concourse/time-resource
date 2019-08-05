@@ -93,5 +93,26 @@ var _ = Describe("In", func() {
 				Expect(response.Version.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 			})
 		})
+		Context("when the request has a future time in its version", func() {
+			duration := time.Second * 10
+
+			BeforeEach(func() {
+				request.Version.Time = time.Now().Add(duration)
+			})
+
+			It("reports the future time as the version", func() {
+				Expect(response.Version.Time.Unix()).To(BeNumerically(">", time.Now().Unix(), duration))
+			})
+
+			Context("waits for the future time", func() {
+				BeforeEach(func() {
+					request.Params.Wait = true
+				})
+
+				It("waits until the future time has been reached", func() {
+					Expect(response.Version.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+				})
+			})
+		})
 	})
 })

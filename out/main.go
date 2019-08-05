@@ -18,14 +18,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	currentTime := time.Now().UTC()
+	versionTime := time.Now().UTC()
+
+	specifiedDelay := request.Params.After
+	if specifiedDelay != nil {
+		versionTime = versionTime.Add((time.Duration)(*specifiedDelay))
+	}
+
 	specifiedLocation := request.Source.Location
 	if specifiedLocation != nil {
-		currentTime = currentTime.In((*time.Location)(specifiedLocation))
+		versionTime = versionTime.In((*time.Location)(specifiedLocation))
 	}
 
 	outVersion := models.Version{
-		Time: currentTime,
+		Time: versionTime,
 	}
 
 	json.NewEncoder(os.Stdout).Encode(models.OutResponse{

@@ -13,8 +13,9 @@ type Version struct {
 }
 
 type InRequest struct {
-	Source  Source  `json:"source"`
-	Version Version `json:"version"`
+	Source  Source   `json:"source"`
+	Version Version  `json:"version"`
+	Params  InParams `json:"params"`
 }
 
 type InResponse struct {
@@ -22,13 +23,22 @@ type InResponse struct {
 	Metadata Metadata `json:"metadata"`
 }
 
+type InParams struct {
+	Wait bool `json:"wait"`
+}
+
 type OutRequest struct {
-	Source Source `json:"source"`
+	Source Source    `json:"source"`
+	Params OutParams `json:"params"`
 }
 
 type OutResponse struct {
 	Version  Version  `json:"version"`
 	Metadata Metadata `json:"metadata"`
+}
+
+type OutParams struct {
+	After *Interval `json:"after"`
 }
 
 type CheckRequest struct {

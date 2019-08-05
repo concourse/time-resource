@@ -63,17 +63,19 @@ destination.
 
 #### Parameters
 
-*None.*
+* `wait`: *Optional.* If `true`, pauses execution until the given timestamp.
 
 
 ### `out`: Produce the current time.
 
-Returns a version for the current timestamp. This can be used to record the
-time within a build plan, e.g. after running some long-running task.
+Returns a version for the specified timestamp. This can be used to record the
+current time within a build plan, e.g. after running some long-running task,
+or to calculate a future timestamp.
 
 #### Parameters
 
-*None.*
+* `after`: *Optional.* The interval to add to the current time when creating a
+new version. Valid values: `60s`, `90m`, `1h`.
 
 
 ## Examples
