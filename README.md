@@ -9,8 +9,12 @@ level of precision is better left to other tools.
 
 ## Source Configuration
 
-* `interval`: *Optional.* The interval on which to report new versions. Valid
-  values: `60s`, `90m`, `1h`.
+* `skip_check`: *Optional. Default `false`.* If `true`, disables the reporting
+  of new versions based on system time and restricts the reporting of new
+  versions to `put` steps in a pipeline.
+
+* `interval`: *Optional. Required unless `start` and `stop` are defined.* The
+  interval on which to report new versions. Valid examples: `60s`, `90m`, `1h`.
 
 * `location`: *Optional. Default `UTC`.* The
   [location](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) in
@@ -24,7 +28,8 @@ level of precision is better left to other tools.
 
 * `start` and `stop`: *Optional.* Only create new time versions between this
   time range. The supported formats for the times are: `3:04 PM`, `3PM`, `3
-  PM`, `15:04`, and `1504`.
+  PM`, `15:04`, and `1504`. If a `start` is specified, a `stop` must also be
+  specified, and vice versa.
 
   e.g.
 

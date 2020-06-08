@@ -39,15 +39,16 @@ type CheckRequest struct {
 type CheckResponse []Version
 
 type Source struct {
-	Interval *Interval  `json:"interval"`
-	Start    *TimeOfDay `json:"start"`
-	Stop     *TimeOfDay `json:"stop"`
-	Days     []Weekday  `json:"days"`
-	Location *Location  `json:"location"`
+	SkipCheck bool       `json:"skip_check"`
+	Interval  *Interval  `json:"interval"`
+	Start     *TimeOfDay `json:"start"`
+	Stop      *TimeOfDay `json:"stop"`
+	Days      []Weekday  `json:"days"`
+	Location  *Location  `json:"location"`
 }
 
 func (source Source) Validate() error {
-	if source.Interval == nil && source.Start == nil && source.Stop == nil {
+	if source.Interval == nil && source.Start == nil && source.Stop == nil && source.SkipCheck == false {
 		return errors.New("must configure either 'interval' or 'start' and 'stop'")
 	}
 

@@ -507,6 +507,32 @@ var _ = Describe("Check", func() {
 				})
 			})
 		})
+
+		Context("with checking skipped", func() {
+			BeforeEach(func() {
+				source["skip_check"] = true
+			})
+
+			Context("when no version is given", func() {
+				It("does not output any versions", func() {
+					Expect(response).To(BeEmpty())
+				})
+			})
+
+			Context("when a version is given", func() {
+				var prev time.Time
+
+				BeforeEach(func() {
+					prev = now.Add(-30 * time.Minute)
+					version = &models.Version{Time: prev}
+				})
+
+				It("outputs the supplied version", func() {
+					Expect(response).To(HaveLen(1))
+					Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+				})
+			})
+		})
 	})
 
 	Context("with invalid inputs", func() {

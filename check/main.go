@@ -48,7 +48,7 @@ func main() {
 		versions = append(versions, models.Version{Time: previousTime})
 	}
 
-	if tl.Check(currentTime) {
+	if request.Source.SkipCheck == false && tl.Check(currentTime) {
 		versions = append(versions, models.Version{Time: currentTime})
 	}
 
