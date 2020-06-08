@@ -1,5 +1,9 @@
 FROM concourse/golang-builder AS builder
-COPY . /go/src/github.com/concourse/time-resource
+WORKDIR /concourse/time-resource
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+COPY . /concourse/time-resource
 ENV CGO_ENABLED 0
 RUN go build -o /assets/out github.com/concourse/time-resource/out
 RUN go build -o /assets/in github.com/concourse/time-resource/in
