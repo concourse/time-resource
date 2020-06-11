@@ -149,11 +149,64 @@ var _ = Describe("Check", func() {
 							Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 						})
 					})
+
+					Context("from a predictable implementation", func() {
+						Context("when the resource has already triggered with in the current time range", func() {
+							BeforeEach(func() {
+								prev = now.Add(-30 * time.Minute).Truncate(time.Minute)
+								version = &models.Version{Time: prev}
+							})
+
+							It("outputs a supplied version", func() {
+								Expect(response).To(HaveLen(1))
+								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+							})
+						})
+
+						Context("when the resource was triggered yesterday at the end of the time frame", func() {
+							BeforeEach(func() {
+								prev = now.Add(-23 * time.Hour).Truncate(time.Minute)
+								version = &models.Version{Time: prev}
+							})
+							It("outputs a version containing the current time", func() {
+								Expect(response).To(HaveLen(1))
+								Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							})
+						})
+
+						Context("when the resource was triggered last year near the end of the time frame", func() {
+							BeforeEach(func() {
+								prev = now.AddDate(-1, 0, 0).Truncate(time.Minute)
+								version = &models.Version{Time: prev}
+							})
+							It("outputs a version containing the current time and supplied version", func() {
+								Expect(response).To(HaveLen(2))
+								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+								Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							})
+						})
+
+						Context("when the resource was triggered yesterday in the current time frame", func() {
+							BeforeEach(func() {
+								prev = now.AddDate(0, 0, -1).Truncate(time.Minute)
+								version = &models.Version{Time: prev}
+							})
+
+							It("outputs a version containing the current time and supplied version", func() {
+								Expect(response).To(HaveLen(2))
+								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+								Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							})
+						})
+					})
 				})
 
 				Context("when an interval is specified", func() {
+					var currentInterval time.Time
+
 					BeforeEach(func() {
 						source["interval"] = "1m"
+						currentInterval = now.Truncate(time.Minute)
 					})
 
 					Context("when no version is given", func() {
@@ -201,6 +254,48 @@ var _ = Describe("Check", func() {
 								Expect(response).To(HaveLen(2))
 								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
 								Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							})
+						})
+
+						Context("from a predictable implementation", func() {
+							Context("when the interval has not elapsed", func() {
+								BeforeEach(func() {
+									prev = currentInterval
+									version = &models.Version{Time: prev}
+								})
+
+								It("outputs a supplied version", func() {
+									Expect(response).To(HaveLen(1))
+									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+								})
+							})
+
+							Context("when the interval has elapsed", func() {
+								BeforeEach(func() {
+									prev = currentInterval.Add(-1 * time.Minute)
+									version = &models.Version{Time: prev}
+								})
+
+								It("outputs a version containing the current interval and supplied version", func() {
+									Expect(response).To(HaveLen(2))
+									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+									Expect(response[1].Time.Unix()).To(Equal(currentInterval.Unix()))
+								})
+							})
+
+							Context("with its time N intervals ago", func() {
+								N_INTERVALS := 5
+
+								BeforeEach(func() {
+									prev = currentInterval.Add(-1 * time.Duration(N_INTERVALS) * time.Minute)
+									version = &models.Version{Time: prev}
+								})
+
+								It("outputs N new versions (including the current interval) and supplied version", func() {
+									Expect(response).To(HaveLen(N_INTERVALS + 1))
+									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+									Expect(response[N_INTERVALS].Time.Unix()).To(Equal(currentInterval.Unix()))
+								})
 							})
 						})
 					})
@@ -334,11 +429,57 @@ var _ = Describe("Check", func() {
 								Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 							})
 						})
+
+						Context("from a predictable implementation", func() {
+							BeforeEach(func() {
+								now = now.Truncate(time.Minute)
+							})
+
+							Context("when the resource has already triggered with in the current time range", func() {
+								BeforeEach(func() {
+									prev = now.Add(-30 * time.Minute)
+									version = &models.Version{Time: prev}
+								})
+
+								It("outputs a supplied version", func() {
+									Expect(response).To(HaveLen(1))
+									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+								})
+							})
+
+							Context("when the resource was triggered yesterday at the end of the time frame", func() {
+								BeforeEach(func() {
+									prev = now.Add(-23 * time.Hour)
+									version = &models.Version{Time: prev}
+								})
+
+								It("outputs a version containing the current time", func() {
+									Expect(response).To(HaveLen(1))
+									Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+								})
+							})
+
+							Context("when the resource was triggered yesterday in the current time frame", func() {
+								BeforeEach(func() {
+									prev = now.AddDate(0, 0, -1)
+									version = &models.Version{Time: prev}
+								})
+
+								It("outputs a version containing the current time and supplied version", func() {
+									Expect(response).To(HaveLen(2))
+									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+									Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+								})
+							})
+						})
 					})
 
 					Context("when an interval is specified", func() {
+						var currentInterval time.Time
+
 						BeforeEach(func() {
 							source["interval"] = "1m"
+							currentInterval = now.Truncate(time.Minute)
 						})
 
 						Context("when no version is given", func() {
@@ -386,6 +527,48 @@ var _ = Describe("Check", func() {
 									Expect(response).To(HaveLen(2))
 									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
 									Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+								})
+							})
+
+							Context("from a predictable implementation", func() {
+								Context("with its time within the interval", func() {
+									BeforeEach(func() {
+										prev = currentInterval
+										version = &models.Version{Time: prev}
+									})
+
+									It("outputs the given version", func() {
+										Expect(response).To(HaveLen(1))
+										Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+									})
+								})
+
+								Context("with its time one interval ago", func() {
+									BeforeEach(func() {
+										prev = currentInterval.Add(-1 * time.Minute)
+										version = &models.Version{Time: prev}
+									})
+
+									It("outputs a version containing the current time and supplied version", func() {
+										Expect(response).To(HaveLen(2))
+										Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+										Expect(response[1].Time.Unix()).To(Equal(currentInterval.Unix()))
+									})
+								})
+
+								Context("with its time N intervals ago", func() {
+									N_INTERVALS := 5
+
+									BeforeEach(func() {
+										prev = currentInterval.Add(-1 * time.Duration(N_INTERVALS) * time.Minute)
+										version = &models.Version{Time: prev}
+									})
+
+									It("outputs N new versions (including the current interval) and supplied version", func() {
+										Expect(response).To(HaveLen(N_INTERVALS + 1))
+										Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+										Expect(response[N_INTERVALS].Time.Unix()).To(Equal(currentInterval.Unix()))
+									})
 								})
 							})
 						})
@@ -494,15 +677,17 @@ var _ = Describe("Check", func() {
 				})
 
 				Context("with its time N intervals ago", func() {
+					N_INTERVALS := 5
+
 					BeforeEach(func() {
-						prev = now.Add(-5 * time.Minute)
+						prev = now.Add(-time.Duration(N_INTERVALS) * time.Minute)
 						version = &models.Version{Time: prev}
 					})
 
-					It("outputs a version containing the current time and supplied version", func() {
-						Expect(response).To(HaveLen(2))
+					It("outputs N new versions (including the current time) and supplied version", func() {
+						Expect(response).To(HaveLen(N_INTERVALS + 1))
 						Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-						Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+						Expect(response[N_INTERVALS].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 					})
 				})
 			})
