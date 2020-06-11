@@ -44,12 +44,31 @@ func main() {
 
 	versions := []models.Version{}
 
-	if !previousTime.IsZero() {
-		versions = append(versions, models.Version{Time: previousTime})
-	}
+	if previousTime.IsZero() {
 
-	if tl.Check(currentTime) {
-		versions = append(versions, models.Version{Time: currentTime})
+		if latestIntervalTime := tl.Latest(currentTime); !latestIntervalTime.IsZero() {
+			versions = append(versions, models.Version{Time: latestIntervalTime})
+		}
+
+	} else {
+
+		latestVersionTime := previousTime
+
+		for _, elem := range tl.List(previousTime) {
+			if !elem.Before(previousTime) && !elem.After(currentTime) {
+				latestVersionTime = elem
+				versions = append(versions, models.Version{Time: latestVersionTime})
+			}
+		}
+
+		// TODO Fill in the gap
+
+		for _, elem := range tl.List(currentTime) {
+			if elem.After(latestVersionTime) && !elem.After(currentTime) {
+				latestVersionTime = elem
+				versions = append(versions, models.Version{Time: latestVersionTime})
+			}
+		}
 	}
 
 	json.NewEncoder(os.Stdout).Encode(versions)
