@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/concourse/time-resource/lord"
 	"github.com/concourse/time-resource/models"
 )
 
@@ -19,13 +20,22 @@ func main() {
 	}
 
 	currentTime := time.Now().UTC()
+
 	specifiedLocation := request.Source.Location
 	if specifiedLocation != nil {
 		currentTime = currentTime.In((*time.Location)(specifiedLocation))
 	}
 
+	tl := lord.TimeLord{
+		Location: specifiedLocation,
+		Start:    request.Source.Start,
+		Stop:     request.Source.Stop,
+		Interval: request.Source.Interval,
+		Days:     request.Source.Days,
+	}
+
 	outVersion := models.Version{
-		Time: currentTime,
+		Time: tl.Latest(currentTime),
 	}
 
 	json.NewEncoder(os.Stdout).Encode(models.OutResponse{
