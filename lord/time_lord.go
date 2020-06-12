@@ -197,15 +197,26 @@ func (tl TimeLord) listIntervalInRange(reference time.Time) []time.Time {
 	loc := tl.loc()
 	refInLoc := reference.In(loc)
 
-	start, end := tl.latestRangeBefore(refInLoc)
+	start, _ := tl.latestRangeBefore(refInLoc)
 	tlDuration := time.Duration(*tl.Interval)
 
 	versions := []time.Time{}
-	for intervalTime := start; !intervalTime.After(refInLoc) && intervalTime.Before(end); intervalTime = intervalTime.Add(tlDuration) {
-		if !tl.PreviousTime.After(intervalTime) && tl.daysMatch(intervalTime) {
-			versions = append(versions, intervalTime)
+
+	if !tl.PreviousTime.IsZero() {
+		start, _ = tl.latestRangeBefore(tl.PreviousTime)
+	}
+
+	for dailyInterval := start; !dailyInterval.After(refInLoc); dailyInterval = dailyInterval.AddDate(0, 0, 1) {
+		if tl.daysMatch(dailyInterval) {
+			dailyStart, dailyEnd := tl.latestRangeBefore(dailyInterval)
+			for intervalTime := dailyStart; !intervalTime.After(refInLoc) && intervalTime.Before(dailyEnd); intervalTime = intervalTime.Add(tlDuration) {
+				if !tl.PreviousTime.After(intervalTime) {
+					versions = append(versions, intervalTime)
+				}
+			}
 		}
 	}
+
 	return versions
 }
 
@@ -215,15 +226,28 @@ func (tl TimeLord) listInRange(reference time.Time) []time.Time {
 
 	start, end := tl.latestRangeBefore(refInLoc)
 
-	if !tl.PreviousTime.Before(start) && tl.PreviousTime.Before(refInLoc) {
-		return []time.Time{tl.PreviousTime.In(loc)}
+	versions := []time.Time{}
+
+	if !tl.PreviousTime.IsZero() {
+		previousInLoc := tl.PreviousTime.In(loc)
+		previousStart, previousEnd := tl.latestRangeBefore(previousInLoc)
+
+		if previousInLoc.Before(previousEnd) && previousInLoc.Before(refInLoc) && tl.daysMatch(previousInLoc) {
+			versions = append(versions, previousInLoc)
+		}
+
+		for intervalTime := previousStart.AddDate(0, 0, 1); intervalTime.Before(start); intervalTime = intervalTime.AddDate(0, 0, 1) {
+			if tl.daysMatch(intervalTime) {
+				versions = append(versions, intervalTime)
+			}
+		}
 	}
 
-	if refInLoc.Before(end) && tl.daysMatch(refInLoc) {
-		return []time.Time{refInLoc}
+	if tl.PreviousTime.Before(start) && refInLoc.Before(end) && tl.daysMatch(refInLoc) {
+		versions = append(versions, refInLoc)
 	}
 
-	return []time.Time{}
+	return versions
 }
 
 func (tl TimeLord) loc() *time.Location {

@@ -12,8 +12,9 @@ import (
 )
 
 type expectedTime struct {
-	hour   int
-	minute int
+	hour    int
+	minute  int
+	weekday time.Weekday
 }
 
 type testCase struct {
@@ -125,10 +126,12 @@ func (tc testCase) Run() {
 		tc.list = []expectedTime{*tc.latest}
 	}
 	Expect(len(list)).To(Equal(len(tc.list)))
-	for idx := range list {
-		Expect(list[idx].Hour()).To(Equal(tc.list[idx].hour))
-		Expect(list[idx].Minute()).To(Equal(tc.list[idx].minute))
+	for idx, actual := range list {
+		expected := tc.list[idx]
+		Expect(actual.Hour()).To(Equal(expected.hour))
+		Expect(actual.Minute()).To(Equal(expected.minute))
 		Expect(latest.Second()).To(Equal(0))
+		Expect(actual.Weekday()).To(Equal(expected.weekday))
 	}
 }
 
@@ -251,6 +254,9 @@ var _ = DescribeTable("A range with a previous time", (testCase).Run,
 		prevDay: time.Monday,
 		result:  false,
 		latest:  &expectedTime{hour: 11},
+		list: []expectedTime{
+			{hour: 11, weekday: time.Monday},
+		},
 	}),
 	Entry("with stop before start and prev outside the range and now in the stop day", testCase{
 		start:   "10:00 AM +0000",
@@ -261,6 +267,9 @@ var _ = DescribeTable("A range with a previous time", (testCase).Run,
 		prevDay: time.Monday,
 		result:  true,
 		latest:  &expectedTime{hour: 4},
+		list: []expectedTime{
+			{hour: 4, weekday: time.Tuesday},
+		},
 	}),
 	Entry("after now and in range on same day as now", testCase{
 		start:  "2:00 AM +0000",
@@ -269,6 +278,7 @@ var _ = DescribeTable("A range with a previous time", (testCase).Run,
 		prev:   "3:30 AM +0000",
 		result: false,
 		latest: &expectedTime{hour: 3},
+		list:   []expectedTime{},
 	}),
 	Entry("after now and out of range on same day as now", testCase{
 		start:  "2:00 AM +0000",
@@ -277,6 +287,7 @@ var _ = DescribeTable("A range with a previous time", (testCase).Run,
 		prev:   "5:00 AM +0000",
 		result: false,
 		latest: &expectedTime{hour: 3},
+		list:   []expectedTime{},
 	}),
 )
 
@@ -298,6 +309,9 @@ var _ = DescribeTable("A range with a location and no previous time", (testCase)
 		nowDay:   time.Wednesday,
 		result:   true,
 		latest:   &expectedTime{hour: 13},
+		list: []expectedTime{
+			{hour: 13, weekday: time.Wednesday},
+		},
 	}),
 	Entry("not between the start and stop time in a given location", testCase{
 		location: "America/Indiana/Indianapolis",
@@ -324,6 +338,9 @@ var _ = DescribeTable("A range with a location and no previous time", (testCase)
 		nowDay:   time.Thursday,
 		result:   true,
 		latest:   &expectedTime{hour: 21},
+		list: []expectedTime{
+			{hour: 21, weekday: time.Wednesday},
+		},
 	}),
 )
 
@@ -340,6 +357,10 @@ var _ = DescribeTable("A range with a location and a previous time", (testCase).
 
 		result: true,
 		latest: &expectedTime{hour: 13},
+		list: []expectedTime{
+			{hour: 13, weekday: time.Wednesday},
+			{hour: 13, weekday: time.Thursday},
+		},
 	}),
 	Entry("between the start and stop time in a given location, on the same day", testCase{
 		location: "America/Indiana/Indianapolis",
@@ -353,6 +374,9 @@ var _ = DescribeTable("A range with a location and a previous time", (testCase).
 
 		result: false,
 		latest: &expectedTime{hour: 13},
+		list: []expectedTime{
+			{hour: 13, weekday: time.Wednesday},
+		},
 	}),
 	Entry("not between the start and stop time in a given location, on the same day", testCase{
 		location: "America/Indiana/Indianapolis",
@@ -366,6 +390,9 @@ var _ = DescribeTable("A range with a location and a previous time", (testCase).
 
 		result: false,
 		latest: &expectedTime{hour: 13},
+		list: []expectedTime{
+			{hour: 13, weekday: time.Wednesday},
+		},
 	}),
 )
 
@@ -410,6 +437,10 @@ var _ = DescribeTable("A range with an interval and a previous time", (testCase)
 
 		result: true,
 		latest: &expectedTime{hour: 13},
+		list: []expectedTime{
+			{hour: 14, minute: 58, weekday: time.Wednesday},
+			{hour: 13, weekday: time.Thursday},
+		},
 	}),
 	Entry("between the start and stop time, elapsed", testCase{
 		interval: "2m",

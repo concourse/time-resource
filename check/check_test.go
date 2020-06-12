@@ -129,10 +129,11 @@ var _ = Describe("Check", func() {
 							version = &models.Version{Time: prev}
 						})
 
-						It("outputs a version containing the current time and supplied version", func() {
-							Expect(response).To(HaveLen(2))
+						It("outputs a version for the current time, supplied version, and every day in between", func() {
+							daysInYear := int(now.Sub(prev).Hours() / 24)
+							Expect(response).To(HaveLen(daysInYear + 1))
 							Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-							Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							Expect(response[daysInYear].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 						})
 					})
 
@@ -178,10 +179,11 @@ var _ = Describe("Check", func() {
 								prev = now.AddDate(-1, 0, 0).Truncate(time.Minute)
 								version = &models.Version{Time: prev}
 							})
-							It("outputs a version containing the current time and supplied version", func() {
-								Expect(response).To(HaveLen(2))
+							It("outputs a version for the current time, supplied version, and every day in between", func() {
+								daysInYear := int(now.Sub(prev).Hours() / 24)
+								Expect(response).To(HaveLen(daysInYear + 1))
 								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-								Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+								Expect(response[daysInYear].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 							})
 						})
 
@@ -256,6 +258,21 @@ var _ = Describe("Check", func() {
 							})
 						})
 
+						Context("when the resource was triggered yesterday", func() {
+							intervals := 120
+
+							BeforeEach(func() {
+								prev = now.AddDate(0, 0, -1)
+								version = &models.Version{Time: prev}
+							})
+
+							It("outputs intervals from yesterday and today", func() {
+								Expect(response).To(HaveLen(intervals))
+								Expect(response[0].Time.Unix()).To(Not(Equal(prev.Unix())))
+								Expect(response[intervals-1].Time.Unix()).To(Equal(currentInterval.Unix()))
+							})
+						})
+
 						Context("from a predictable implementation", func() {
 							Context("when the interval has not elapsed", func() {
 								BeforeEach(func() {
@@ -294,6 +311,21 @@ var _ = Describe("Check", func() {
 									Expect(response).To(HaveLen(N_INTERVALS + 1))
 									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
 									Expect(response[N_INTERVALS].Time.Unix()).To(Equal(currentInterval.Unix()))
+								})
+							})
+
+							Context("when the resource was triggered yesterday", func() {
+								intervals := 120
+
+								BeforeEach(func() {
+									prev = currentInterval.AddDate(0, 0, -1)
+									version = &models.Version{Time: prev}
+								})
+
+								It("outputs intervals from yesterday and today", func() {
+									Expect(response).To(HaveLen(intervals + 1))
+									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+									Expect(response[intervals].Time.Unix()).To(Equal(currentInterval.Unix()))
 								})
 							})
 						})
@@ -528,6 +560,21 @@ var _ = Describe("Check", func() {
 								})
 							})
 
+							Context("when the resource was triggered yesterday", func() {
+								intervals := 120
+
+								BeforeEach(func() {
+									prev = now.AddDate(0, 0, -1)
+									version = &models.Version{Time: prev}
+								})
+
+								It("outputs intervals from yesterday and today", func() {
+									Expect(response).To(HaveLen(intervals))
+									Expect(response[0].Time.Unix()).To(Not(Equal(prev.Unix())))
+									Expect(response[intervals-1].Time.Unix()).To(Equal(currentInterval.Unix()))
+								})
+							})
+
 							Context("from a predictable implementation", func() {
 								Context("with its time within the interval", func() {
 									BeforeEach(func() {
@@ -566,6 +613,21 @@ var _ = Describe("Check", func() {
 										Expect(response).To(HaveLen(N_INTERVALS + 1))
 										Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
 										Expect(response[N_INTERVALS].Time.Unix()).To(Equal(currentInterval.Unix()))
+									})
+								})
+
+								Context("when the resource was triggered yesterday", func() {
+									intervals := 120
+
+									BeforeEach(func() {
+										prev = currentInterval.AddDate(0, 0, -1)
+										version = &models.Version{Time: prev}
+									})
+
+									It("ooutputs intervals from yesterday and today", func() {
+										Expect(response).To(HaveLen(intervals + 1))
+										Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+										Expect(response[intervals].Time.Unix()).To(Equal(currentInterval.Unix()))
 									})
 								})
 							})

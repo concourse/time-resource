@@ -42,32 +42,20 @@ func main() {
 		Days:         request.Source.Days,
 	}
 
-	versions := []models.Version{}
+	var versions []models.Version
 
 	if previousTime.IsZero() {
 
 		if latestIntervalTime := tl.Latest(currentTime); !latestIntervalTime.IsZero() {
-			versions = append(versions, models.Version{Time: latestIntervalTime})
+			versions = []models.Version{{Time: latestIntervalTime}}
 		}
 
 	} else {
+		timeList := tl.List(currentTime)
+		versions = make([]models.Version, len(timeList))
 
-		latestVersionTime := previousTime
-
-		for _, elem := range tl.List(previousTime) {
-			if !elem.Before(previousTime) && !elem.After(currentTime) {
-				latestVersionTime = elem
-				versions = append(versions, models.Version{Time: latestVersionTime})
-			}
-		}
-
-		// TODO Fill in the gap
-
-		for _, elem := range tl.List(currentTime) {
-			if elem.After(latestVersionTime) && !elem.After(currentTime) {
-				latestVersionTime = elem
-				versions = append(versions, models.Version{Time: latestVersionTime})
-			}
+		for idx, elem := range timeList {
+			versions[idx] = models.Version{Time: elem}
 		}
 	}
 
