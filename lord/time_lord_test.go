@@ -35,7 +35,7 @@ type testCase struct {
 	nowDay    time.Weekday
 
 	result      bool
-	latest      *expectedTime
+	latest      expectedTime
 	latestError error
 	list        []expectedTime
 }
@@ -124,7 +124,7 @@ func (tc testCase) Run() {
 
 	list := tl.List(now.UTC())
 	if tc.list == nil {
-		tc.list = []expectedTime{*tc.latest}
+		tc.list = []expectedTime{tc.latest}
 	}
 	Expect(len(list)).To(Equal(len(tc.list)))
 	for idx, actual := range list {
@@ -142,21 +142,21 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		stop:   "4:00 AM +0000",
 		now:    "3:00 AM +0000",
 		result: true,
-		latest: &expectedTime{hour: 3},
+		latest: expectedTime{hour: 3},
 	}),
 	Entry("between the start and stop time down to the minute", testCase{
 		start:  "2:01 AM +0000",
 		stop:   "2:03 AM +0000",
 		now:    "2:02 AM +0000",
 		result: true,
-		latest: &expectedTime{hour: 2, minute: 2},
+		latest: expectedTime{hour: 2, minute: 2},
 	}),
 	Entry("not between the start and stop time", testCase{
 		start:       "2:00 AM +0000",
 		stop:        "4:00 AM +0000",
 		now:         "5:00 AM +0000",
 		result:      false,
-		latest:      &expectedTime{hour: 3, minute: 59},
+		latest:      expectedTime{hour: 3, minute: 59},
 		latestError: lord.NotYetError,
 		list:        []expectedTime{},
 	}),
@@ -165,7 +165,7 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		stop:        "4:00 AM +0000",
 		now:         "4:10 AM +0000",
 		result:      false,
-		latest:      &expectedTime{hour: 3, minute: 59},
+		latest:      expectedTime{hour: 3, minute: 59},
 		latestError: lord.NotYetError,
 		list:        []expectedTime{},
 	}),
@@ -174,7 +174,7 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		stop:        "11:10 AM +0000",
 		now:         "11:05 AM +0000",
 		result:      false,
-		latest:      &expectedTime{hour: 11, minute: 9},
+		latest:      expectedTime{hour: 11, minute: 9},
 		latestError: lord.NotYetError,
 		list:        []expectedTime{},
 	}),
@@ -184,7 +184,7 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		now:         "3:03 AM +0000",
 		extraTime:   time.Minute - time.Nanosecond,
 		result:      false,
-		latest:      &expectedTime{hour: 3, minute: 6},
+		latest:      expectedTime{hour: 3, minute: 6},
 		latestError: lord.NotYetError,
 		list:        []expectedTime{},
 	}),
@@ -193,7 +193,7 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		stop:   "3:07 AM +0000",
 		now:    "3:04 AM +0000",
 		result: true,
-		latest: &expectedTime{hour: 3, minute: 4},
+		latest: expectedTime{hour: 3, minute: 4},
 	}),
 	Entry("one nanosecond before the stop time", testCase{
 		start:     "3:04 AM +0000",
@@ -201,14 +201,14 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		now:       "3:06 AM +0000",
 		extraTime: time.Minute - time.Nanosecond,
 		result:    true,
-		latest:    &expectedTime{hour: 3, minute: 6},
+		latest:    expectedTime{hour: 3, minute: 6},
 	}),
 	Entry("equal to the stop time", testCase{
 		start:       "3:04 AM +0000",
 		stop:        "3:07 AM +0000",
 		now:         "3:07 AM +0000",
 		result:      false,
-		latest:      &expectedTime{hour: 3, minute: 6},
+		latest:      expectedTime{hour: 3, minute: 6},
 		latestError: lord.NotYetError,
 		list:        []expectedTime{},
 	}),
@@ -218,21 +218,21 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		stop:   "1:00 AM +0000",
 		now:    "6:00 AM +0000",
 		result: true,
-		latest: &expectedTime{hour: 6},
+		latest: expectedTime{hour: 6},
 	}),
 	Entry("between the start and stop time but the stop time is before the start time, spanning half a day", testCase{
 		start:  "8:00 PM +0000",
 		stop:   "8:00 AM +0000",
 		now:    "1:00 AM +0000",
 		result: true,
-		latest: &expectedTime{hour: 1},
+		latest: expectedTime{hour: 1},
 	}),
 	Entry("between the start and stop time but the stop time is before the start time and now is in the stop day", testCase{
 		start:  "8:00 PM +0000",
 		stop:   "8:00 AM +0000",
 		now:    "7:00 AM +0000",
 		result: true,
-		latest: &expectedTime{hour: 7},
+		latest: expectedTime{hour: 7},
 	}),
 
 	Entry("between the start and stop time but the compare time is in a different timezone", testCase{
@@ -240,7 +240,7 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		stop:   "6:00 AM -0600",
 		now:    "1:00 AM -0700",
 		result: true,
-		latest: &expectedTime{hour: 8},
+		latest: expectedTime{hour: 8},
 	}),
 
 	Entry("covering almost a full day", testCase{
@@ -248,7 +248,7 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		stop:   "11:59 PM -0700",
 		now:    "1:10 AM +0000",
 		result: true,
-		latest: &expectedTime{hour: 1, minute: 10},
+		latest: expectedTime{hour: 1, minute: 10},
 	}),
 )
 
@@ -259,7 +259,7 @@ var _ = DescribeTable("A range with a previous time", (testCase).Run,
 		now:    "3:00 AM +0000",
 		prev:   "1:00 AM +0000",
 		result: true,
-		latest: &expectedTime{hour: 3},
+		latest: expectedTime{hour: 3},
 	}),
 	Entry("with stop before start and prev in the start day and now in the stop day", testCase{
 		start:   "10:00 AM +0000",
@@ -269,7 +269,7 @@ var _ = DescribeTable("A range with a previous time", (testCase).Run,
 		prev:    "11:00 AM +0000",
 		prevDay: time.Monday,
 		result:  false,
-		latest:  &expectedTime{hour: 11},
+		latest:  expectedTime{hour: 11},
 		list: []expectedTime{
 			{hour: 11, weekday: time.Monday},
 		},
@@ -282,7 +282,7 @@ var _ = DescribeTable("A range with a previous time", (testCase).Run,
 		prev:    "9:00 AM +0000",
 		prevDay: time.Monday,
 		result:  true,
-		latest:  &expectedTime{hour: 4},
+		latest:  expectedTime{hour: 4},
 		list: []expectedTime{
 			{hour: 4, weekday: time.Tuesday},
 		},
@@ -293,7 +293,7 @@ var _ = DescribeTable("A range with a previous time", (testCase).Run,
 		now:    "3:00 AM +0000",
 		prev:   "3:30 AM +0000",
 		result: false,
-		latest: &expectedTime{hour: 3},
+		latest: expectedTime{hour: 3},
 		list:   []expectedTime{},
 	}),
 	Entry("after now and out of range on same day as now", testCase{
@@ -302,7 +302,7 @@ var _ = DescribeTable("A range with a previous time", (testCase).Run,
 		now:    "3:00 AM +0000",
 		prev:   "5:00 AM +0000",
 		result: false,
-		latest: &expectedTime{hour: 3},
+		latest: expectedTime{hour: 3},
 		list:   []expectedTime{},
 	}),
 )
@@ -314,7 +314,7 @@ var _ = DescribeTable("A range with a location and no previous time", (testCase)
 		stop:     "3:00 PM",
 		now:      "6:00 PM +0000",
 		result:   true,
-		latest:   &expectedTime{hour: 13},
+		latest:   expectedTime{hour: 13},
 	}),
 	Entry("between the start and stop time in a given location on a matching day", testCase{
 		location: "America/Indiana/Indianapolis",
@@ -324,7 +324,7 @@ var _ = DescribeTable("A range with a location and no previous time", (testCase)
 		now:      "6:00 PM +0000",
 		nowDay:   time.Wednesday,
 		result:   true,
-		latest:   &expectedTime{hour: 13},
+		latest:   expectedTime{hour: 13},
 		list: []expectedTime{
 			{hour: 13, weekday: time.Wednesday},
 		},
@@ -335,7 +335,7 @@ var _ = DescribeTable("A range with a location and no previous time", (testCase)
 		stop:        "3:00 PM",
 		now:         "8:00 PM +0000",
 		result:      false,
-		latest:      &expectedTime{hour: 14, minute: 59},
+		latest:      expectedTime{hour: 14, minute: 59},
 		latestError: lord.NotYetError,
 		list:        []expectedTime{},
 	}),
@@ -347,7 +347,7 @@ var _ = DescribeTable("A range with a location and no previous time", (testCase)
 		now:         "6:00 PM +0000",
 		nowDay:      time.Thursday,
 		result:      false,
-		latest:      &expectedTime{hour: 14, minute: 59, weekday: time.Wednesday},
+		latest:      expectedTime{hour: 14, minute: 59, weekday: time.Wednesday},
 		latestError: lord.NotYetError,
 		list:        []expectedTime{},
 	}),
@@ -359,7 +359,7 @@ var _ = DescribeTable("A range with a location and no previous time", (testCase)
 		now:      "2:00 AM +0000",
 		nowDay:   time.Thursday,
 		result:   true,
-		latest:   &expectedTime{hour: 21},
+		latest:   expectedTime{hour: 21},
 		list: []expectedTime{
 			{hour: 21, weekday: time.Wednesday},
 		},
@@ -378,7 +378,7 @@ var _ = DescribeTable("A range with a location and a previous time", (testCase).
 		nowDay:  time.Thursday,
 
 		result: true,
-		latest: &expectedTime{hour: 13},
+		latest: expectedTime{hour: 13},
 		list: []expectedTime{
 			{hour: 13, weekday: time.Wednesday},
 			{hour: 13, weekday: time.Thursday},
@@ -395,7 +395,7 @@ var _ = DescribeTable("A range with a location and a previous time", (testCase).
 		nowDay:  time.Wednesday,
 
 		result: false,
-		latest: &expectedTime{hour: 13},
+		latest: expectedTime{hour: 13},
 		list: []expectedTime{
 			{hour: 13, weekday: time.Wednesday},
 		},
@@ -411,7 +411,7 @@ var _ = DescribeTable("A range with a location and a previous time", (testCase).
 		nowDay:  time.Wednesday,
 
 		result: false,
-		latest: &expectedTime{hour: 13},
+		latest: expectedTime{hour: 13},
 		list: []expectedTime{
 			{hour: 13, weekday: time.Wednesday},
 		},
@@ -423,21 +423,21 @@ var _ = DescribeTable("An interval", (testCase).Run,
 		interval: "2m",
 		now:      "12:00 PM +0000",
 		result:   true,
-		latest:   &expectedTime{hour: 12},
+		latest:   expectedTime{hour: 12},
 	}),
 	Entry("with a previous time that has not elapsed", testCase{
 		interval: "2m",
 		prev:     "12:00 PM +0000",
 		now:      "12:01 PM +0000",
 		result:   false,
-		latest:   &expectedTime{hour: 12},
+		latest:   expectedTime{hour: 12},
 	}),
 	Entry("with a previous time that has elapsed", testCase{
 		interval: "2m",
 		prev:     "12:00 PM +0000",
 		now:      "12:02 PM +0000",
 		result:   true,
-		latest:   &expectedTime{hour: 12, minute: 2},
+		latest:   expectedTime{hour: 12, minute: 2},
 		list: []expectedTime{
 			{hour: 12},
 			{hour: 12, minute: 2},
@@ -458,7 +458,7 @@ var _ = DescribeTable("A range with an interval and a previous time", (testCase)
 		nowDay:  time.Thursday,
 
 		result: true,
-		latest: &expectedTime{hour: 13},
+		latest: expectedTime{hour: 13},
 		list: []expectedTime{
 			{hour: 14, minute: 58, weekday: time.Wednesday},
 			{hour: 13, weekday: time.Thursday},
@@ -474,7 +474,7 @@ var _ = DescribeTable("A range with an interval and a previous time", (testCase)
 		now:  "1:04 PM +0000",
 
 		result: true,
-		latest: &expectedTime{hour: 13, minute: 4},
+		latest: expectedTime{hour: 13, minute: 4},
 		list: []expectedTime{
 			{hour: 13, minute: 2},
 			{hour: 13, minute: 4},
@@ -490,7 +490,7 @@ var _ = DescribeTable("A range with an interval and a previous time", (testCase)
 		now:  "1:03 PM +0000",
 
 		result: false,
-		latest: &expectedTime{hour: 13, minute: 2},
+		latest: expectedTime{hour: 13, minute: 2},
 	}),
 	Entry("not between the start and stop time, elapsed", testCase{
 		interval: "2m",
@@ -502,6 +502,6 @@ var _ = DescribeTable("A range with an interval and a previous time", (testCase)
 		now:  "3:02 PM +0000",
 
 		result: false,
-		latest: &expectedTime{hour: 14, minute: 58},
+		latest: expectedTime{hour: 14, minute: 58},
 	}),
 )
