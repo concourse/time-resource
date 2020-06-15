@@ -27,6 +27,9 @@ level of precision is better left to other tools.
   `3:04 PM`, `3PM`, `3PM`, `15:04`, and `1504`. If a `start` is specified, a
   `stop` must also be specified, and vice versa.
 
+  If no `interval` is specified, this resource will generate exactly 1 new
+  version within the `start`/`stop` range.
+
   e.g.
 
   ```
