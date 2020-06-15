@@ -1,6 +1,7 @@
 package lord
 
 import (
+	"errors"
 	"time"
 
 	"github.com/concourse/time-resource/models"
@@ -14,6 +15,8 @@ type TimeLord struct {
 	Interval     *models.Interval
 	Days         []models.Weekday
 }
+
+var NotYetError = errors.New("valid time has not occurred yet")
 
 func (tl TimeLord) Check(now time.Time) bool {
 
@@ -42,13 +45,13 @@ func (tl TimeLord) Check(now time.Time) bool {
 	return false
 }
 
-func (tl TimeLord) Latest(reference time.Time) time.Time {
+func (tl TimeLord) Latest(reference time.Time) (time.Time, error) {
 	if tl.Interval != nil && tl.Start != nil && tl.Stop != nil {
 		return tl.latestIntervalInRange(reference)
 	}
 
 	if tl.Interval != nil {
-		return tl.latestInterval(reference)
+		return tl.latestInterval(reference), nil
 	}
 
 	return tl.latestInRange(reference)
@@ -102,14 +105,15 @@ func (tl TimeLord) latestInterval(reference time.Time) time.Time {
 	return latestValidTime
 }
 
-func (tl TimeLord) latestIntervalInRange(reference time.Time) time.Time {
+func (tl TimeLord) latestIntervalInRange(reference time.Time) (time.Time, error) {
 	loc := tl.loc()
 	refInLoc := reference.In(loc)
 
 	start, end := tl.latestRangeBefore(refInLoc)
+	var err error
 
 	if tl.PreviousTime.IsZero() && !refInLoc.Before(end) {
-		return time.Time{}
+		err = NotYetError
 	}
 
 	tlDuration := time.Duration(*tl.Interval)
@@ -120,32 +124,33 @@ func (tl TimeLord) latestIntervalInRange(reference time.Time) time.Time {
 			latestValidTime = intervalTime
 		}
 	}
-	return latestValidTime
+	return latestValidTime, err
 }
 
-func (tl TimeLord) latestInRange(reference time.Time) time.Time {
+func (tl TimeLord) latestInRange(reference time.Time) (time.Time, error) {
 	loc := tl.loc()
 	refInLoc := reference.In(loc)
 
 	start, end := tl.latestRangeBefore(refInLoc)
+	var err error
 
 	if tl.PreviousTime.IsZero() && (!refInLoc.Before(end) || !tl.daysMatch(refInLoc)) {
-		return time.Time{}
+		err = NotYetError
 	}
 
 	if !tl.PreviousTime.Before(start) && tl.PreviousTime.Before(refInLoc) {
-		return tl.PreviousTime.In(loc)
+		return tl.PreviousTime.In(loc), err
 	}
 
-	if refInLoc.Before(end) {
-		return refInLoc
+	if refInLoc.Before(end) && tl.daysMatch(refInLoc) {
+		return refInLoc, err
 	}
 
 	end = end.Add(-time.Minute)
 	for !tl.daysMatch(end) {
 		end = end.AddDate(0, 0, -1)
 	}
-	return end
+	return end, err
 }
 
 func (tl TimeLord) latestRangeBefore(reference time.Time) (time.Time, time.Time) {

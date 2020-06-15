@@ -34,8 +34,10 @@ func main() {
 		Days:     request.Source.Days,
 	}
 
+	latestTime, _ := tl.Latest(currentTime)
+
 	outVersion := models.Version{
-		Time: tl.Latest(currentTime),
+		Time: latestTime,
 	}
 
 	json.NewEncoder(os.Stdout).Encode(models.OutResponse{

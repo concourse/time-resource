@@ -34,9 +34,10 @@ type testCase struct {
 	extraTime time.Duration
 	nowDay    time.Weekday
 
-	result bool
-	latest *expectedTime
-	list   []expectedTime
+	result      bool
+	latest      *expectedTime
+	latestError error
+	list        []expectedTime
 }
 
 const exampleFormatWithTZ = "3:04 PM -0700 2006"
@@ -111,14 +112,14 @@ func (tc testCase) Run() {
 	result := tl.Check(now.UTC())
 	Expect(result).To(Equal(tc.result))
 
-	latest := tl.Latest(now.UTC())
-	if tc.latest == nil {
-		Expect(latest.IsZero()).To(BeTrue())
-		tc.list = []expectedTime{}
+	latest, err := tl.Latest(now.UTC())
+	Expect(latest.Hour()).To(Equal(tc.latest.hour))
+	Expect(latest.Minute()).To(Equal(tc.latest.minute))
+	Expect(latest.Second()).To(Equal(0))
+	if tc.latestError == nil {
+		Expect(err).To(BeNil())
 	} else {
-		Expect(latest.Hour()).To(Equal(tc.latest.hour))
-		Expect(latest.Minute()).To(Equal(tc.latest.minute))
-		Expect(latest.Second()).To(Equal(0))
+		Expect(err).To(Equal(tc.latestError))
 	}
 
 	list := tl.List(now.UTC())
@@ -151,29 +152,41 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		latest: &expectedTime{hour: 2, minute: 2},
 	}),
 	Entry("not between the start and stop time", testCase{
-		start:  "2:00 AM +0000",
-		stop:   "4:00 AM +0000",
-		now:    "5:00 AM +0000",
-		result: false,
+		start:       "2:00 AM +0000",
+		stop:        "4:00 AM +0000",
+		now:         "5:00 AM +0000",
+		result:      false,
+		latest:      &expectedTime{hour: 3, minute: 59},
+		latestError: lord.NotYetError,
+		list:        []expectedTime{},
 	}),
 	Entry("after the stop time, down to the minute", testCase{
-		start:  "2:00 AM +0000",
-		stop:   "4:00 AM +0000",
-		now:    "4:10 AM +0000",
-		result: false,
+		start:       "2:00 AM +0000",
+		stop:        "4:00 AM +0000",
+		now:         "4:10 AM +0000",
+		result:      false,
+		latest:      &expectedTime{hour: 3, minute: 59},
+		latestError: lord.NotYetError,
+		list:        []expectedTime{},
 	}),
 	Entry("before the start time, down to the minute", testCase{
-		start:  "11:07 AM +0000",
-		stop:   "11:10 AM +0000",
-		now:    "11:05 AM +0000",
-		result: false,
+		start:       "11:07 AM +0000",
+		stop:        "11:10 AM +0000",
+		now:         "11:05 AM +0000",
+		result:      false,
+		latest:      &expectedTime{hour: 11, minute: 9},
+		latestError: lord.NotYetError,
+		list:        []expectedTime{},
 	}),
 	Entry("one nanosecond before the start time", testCase{
-		start:     "3:04 AM +0000",
-		stop:      "3:07 AM +0000",
-		now:       "3:03 AM +0000",
-		extraTime: time.Minute - time.Nanosecond,
-		result:    false,
+		start:       "3:04 AM +0000",
+		stop:        "3:07 AM +0000",
+		now:         "3:03 AM +0000",
+		extraTime:   time.Minute - time.Nanosecond,
+		result:      false,
+		latest:      &expectedTime{hour: 3, minute: 6},
+		latestError: lord.NotYetError,
+		list:        []expectedTime{},
 	}),
 	Entry("equal to the start time", testCase{
 		start:  "3:04 AM +0000",
@@ -191,10 +204,13 @@ var _ = DescribeTable("A range without a previous time", (testCase).Run,
 		latest:    &expectedTime{hour: 3, minute: 6},
 	}),
 	Entry("equal to the stop time", testCase{
-		start:  "3:04 AM +0000",
-		stop:   "3:07 AM +0000",
-		now:    "3:07 AM +0000",
-		result: false,
+		start:       "3:04 AM +0000",
+		stop:        "3:07 AM +0000",
+		now:         "3:07 AM +0000",
+		result:      false,
+		latest:      &expectedTime{hour: 3, minute: 6},
+		latestError: lord.NotYetError,
+		list:        []expectedTime{},
 	}),
 
 	Entry("between the start and stop time but the stop time is before the start time, spanning more than a day", testCase{
@@ -314,20 +330,26 @@ var _ = DescribeTable("A range with a location and no previous time", (testCase)
 		},
 	}),
 	Entry("not between the start and stop time in a given location", testCase{
-		location: "America/Indiana/Indianapolis",
-		start:    "1:00 PM",
-		stop:     "3:00 PM",
-		now:      "8:00 PM +0000",
-		result:   false,
+		location:    "America/Indiana/Indianapolis",
+		start:       "1:00 PM",
+		stop:        "3:00 PM",
+		now:         "8:00 PM +0000",
+		result:      false,
+		latest:      &expectedTime{hour: 14, minute: 59},
+		latestError: lord.NotYetError,
+		list:        []expectedTime{},
 	}),
 	Entry("between the start and stop time in a given location but not on a matching day", testCase{
-		location: "America/Indiana/Indianapolis",
-		start:    "1:00 PM",
-		stop:     "3:00 PM",
-		days:     []time.Weekday{time.Wednesday},
-		now:      "6:00 PM +0000",
-		nowDay:   time.Thursday,
-		result:   false,
+		location:    "America/Indiana/Indianapolis",
+		start:       "1:00 PM",
+		stop:        "3:00 PM",
+		days:        []time.Weekday{time.Wednesday},
+		now:         "6:00 PM +0000",
+		nowDay:      time.Thursday,
+		result:      false,
+		latest:      &expectedTime{hour: 14, minute: 59, weekday: time.Wednesday},
+		latestError: lord.NotYetError,
+		list:        []expectedTime{},
 	}),
 	Entry("between the start and stop time in a given location and on a matching day compared to UTC", testCase{
 		location: "America/Indiana/Indianapolis",

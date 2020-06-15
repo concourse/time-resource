@@ -45,11 +45,14 @@ func main() {
 	var versions []models.Version
 
 	if previousTime.IsZero() {
+		latestIntervalTime, err := tl.Latest(currentTime)
 
-		if latestIntervalTime := tl.Latest(currentTime); !latestIntervalTime.IsZero() {
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "no versions:", err)
+			versions = []models.Version{}
+		} else {
 			versions = []models.Version{{Time: latestIntervalTime}}
 		}
-
 	} else {
 		timeList := tl.List(currentTime)
 		versions = make([]models.Version, len(timeList))

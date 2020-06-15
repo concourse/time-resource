@@ -70,10 +70,11 @@ destination.
 *None.*
 
 
-### `out`: Produce the current time.
+### `out`: Produces the most recent valid time.
 
-Returns a version for the current timestamp. This can be used to record the
-time within a build plan, e.g. after running some long-running task.
+Returns a version for the most recent timestamp based on the configuration.
+This can be used to record a predictable time within a build plan, e.g.
+before/after running some long-running task.
 
 #### Parameters
 
