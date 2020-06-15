@@ -44,7 +44,6 @@ var _ = Describe("Out", func() {
 
 		BeforeEach(func() {
 			source = map[string]interface{}{}
-			source["interval"] = "1m"
 			response = models.OutResponse{}
 		})
 

@@ -46,15 +46,15 @@ func (tl TimeLord) Check(now time.Time) bool {
 }
 
 func (tl TimeLord) Latest(reference time.Time) (time.Time, error) {
-	if tl.Interval != nil && tl.Start != nil && tl.Stop != nil {
-		return tl.latestIntervalInRange(reference)
+	if tl.Start != nil && tl.Stop != nil {
+		if tl.Interval != nil {
+			return tl.latestIntervalInRange(reference)
+		}
+
+		return tl.latestInRange(reference)
 	}
 
-	if tl.Interval != nil {
-		return tl.latestInterval(reference), nil
-	}
-
-	return tl.latestInRange(reference)
+	return tl.latestInterval(reference), nil
 }
 
 func (tl TimeLord) List(reference time.Time) []time.Time {
