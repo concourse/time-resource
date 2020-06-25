@@ -47,10 +47,6 @@ type Source struct {
 }
 
 func (source Source) Validate() error {
-	if source.Interval == nil && source.Start == nil && source.Stop == nil {
-		return errors.New("must configure either 'interval' or 'start' and 'stop'")
-	}
-
 	if source.Start != nil && source.Stop == nil {
 		return errors.New("must configure 'stop' if 'start' is set")
 	}

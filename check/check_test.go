@@ -60,6 +60,44 @@ var _ = Describe("Check", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		Context("when nothing is specified", func() {
+			Context("when no version is given", func() {
+				It("outputs a version containing the current time", func() {
+					Expect(response).To(HaveLen(1))
+					Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+				})
+			})
+
+			Context("when a version is given", func() {
+				var prev time.Time
+
+				Context("when the resource has already triggered on the current day", func() {
+					BeforeEach(func() {
+						prev = time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, now.Second(), now.Nanosecond(), now.Location())
+						version = &models.Version{Time: prev}
+					})
+
+					It("outputs a supplied version", func() {
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
+					})
+				})
+
+				Context("when the resource was triggered yesterday", func() {
+					BeforeEach(func() {
+						prev = now.Add(-24 * time.Hour)
+						version = &models.Version{Time: prev}
+					})
+
+					It("outputs a version containing the current time and supplied version", func() {
+						Expect(response).To(HaveLen(2))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
+						Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+					})
+				})
+			})
+		})
+
 		Context("when a time range is specified", func() {
 			Context("when we are in the specified time range", func() {
 				BeforeEach(func() {
@@ -531,15 +569,6 @@ var _ = Describe("Check", func() {
 				"version": version,
 			})
 			Expect(err).NotTo(HaveOccurred())
-		})
-
-		Context("with a missing everything", func() {
-			It("returns an error", func() {
-				<-session.Exited
-
-				Expect(session.Err).To(gbytes.Say("must configure either 'interval' or 'start' and 'stop'"))
-				Expect(session.ExitCode()).To(Equal(1))
-			})
 		})
 
 		Context("with a missing stop", func() {
