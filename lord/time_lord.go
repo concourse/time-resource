@@ -19,7 +19,7 @@ type TimeLord struct {
 
 func (tl TimeLord) Check(now time.Time) bool {
 
-	start, stop := tl.latestRangeBefore(now)
+	start, stop := tl.LatestRangeBefore(now)
 
 	if !tl.daysMatch(now) {
 		return false
@@ -54,7 +54,7 @@ func (tl TimeLord) Latest(reference time.Time) time.Time {
 		refInLoc = refInLoc.AddDate(0, 0, -1)
 	}
 
-	start, stop := tl.latestRangeBefore(refInLoc)
+	start, stop := tl.LatestRangeBefore(refInLoc)
 
 	if tl.PreviousTime.IsZero() && !reference.Before(stop) {
 		return time.Time{}
@@ -85,7 +85,7 @@ func (tl TimeLord) List(reference time.Time) []time.Time {
 	if tl.Interval == nil {
 
 		if start.IsZero() {
-			refRangeStart, refRangeEnd := tl.latestRangeBefore(reference)
+			refRangeStart, refRangeEnd := tl.LatestRangeBefore(reference)
 			if !reference.Before(refRangeEnd) {
 				return versions
 			}
@@ -122,7 +122,7 @@ func (tl TimeLord) List(reference time.Time) []time.Time {
 	var dailyStart, dailyEnd time.Time
 	for dailyInterval := start; !dailyStart.After(reference); dailyInterval = dailyInterval.AddDate(0, 0, 1) {
 		if tl.daysMatch(dailyInterval) {
-			dailyStart, dailyEnd = tl.latestRangeBefore(dailyInterval)
+			dailyStart, dailyEnd = tl.LatestRangeBefore(dailyInterval)
 			if dailyStart.After(reference) {
 				break
 			}
@@ -148,7 +148,7 @@ func (tl TimeLord) daysMatch(now time.Time) bool {
 	return false
 }
 
-func (tl TimeLord) latestRangeBefore(reference time.Time) (time.Time, time.Time) {
+func (tl TimeLord) LatestRangeBefore(reference time.Time) (time.Time, time.Time) {
 
 	tlStart := DEFAULT_TIME_OF_DAY
 	if tl.Start != nil {
