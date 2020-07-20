@@ -26,7 +26,9 @@ level of precision is better left to other tools.
 * `start` and `stop`: *Optional.* Limit the creation of new versions to times
   on/after `start` and before `stop`. The supported formats for the times are:
   `3:04 PM`, `3PM`, `3PM`, `15:04`, and `1504`. If a `start` is specified, a
-  `stop` must also be specified, and vice versa.
+  `stop` must also be specified, and vice versa. If neither value is specified,
+  both values will default to `00:00` and this resource can generate a new
+  version (based on `interval`) at any time of day.
 
   e.g.
 
