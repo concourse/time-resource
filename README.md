@@ -9,8 +9,9 @@ level of precision is better left to other tools.
 
 ## Source Configuration
 
-* `interval`: *Optional. Required unless `start` and `stop` are defined.* The
-  interval on which to report new versions. Valid examples: `60s`, `90m`, `1h`.
+* `interval`: *Optional.* The interval on which to report new versions. Valid
+  examples: `60s`, `90m`, `1h`. If not specified, this resource will generate
+  exactly 1 new version per calendar day on each of the valid `days`.
 
 * `location`: *Optional. Default `UTC`.* The
   [location](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) in
@@ -22,10 +23,12 @@ level of precision is better left to other tools.
   location: Africa/Abidjan
   ```
 
-* `start` and `stop`: *Optional.* Only create new time versions between this
-  time range. The supported formats for the times are: `3:04 PM`, `3PM`, `3
-  PM`, `15:04`, and `1504`. If a `start` is specified, a `stop` must also be
-  specified, and vice versa.
+* `start` and `stop`: *Optional.* Limit the creation of new versions to times
+  on/after `start` and before `stop`. The supported formats for the times are:
+  `3:04 PM`, `3PM`, `3PM`, `15:04`, and `1504`. If a `start` is specified, a
+  `stop` must also be specified, and vice versa. If neither value is specified,
+  both values will default to `00:00` and this resource can generate a new
+  version (based on `interval`) at any time of day.
 
   e.g.
 
@@ -37,8 +40,19 @@ level of precision is better left to other tools.
   **Deprecation: an offset may be appended, e.g. `+0700` or `-0400`, but you
   should use `location` instead.**
 
-* `days`: *Optional.* Run only on these day(s). Supported days are: `Sunday`,
-  `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday` and `Saturday`.
+  To explicitly represent a full calendar day, set `start` and `stop` to
+  the same value.
+
+  e.g.
+
+  ```
+  start: 6:00 AM
+  stop: 6:00 AM
+  ```
+
+* `days`: *Optional.* Limit the creation of new time versions to the specified
+  day(s). Supported days are: `Sunday`, `Monday`, `Tuesday`, `Wednesday`,
+  `Thursday`, `Friday` and `Saturday`.
 
   e.g.
 

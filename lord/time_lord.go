@@ -2,8 +2,11 @@ package lord
 
 import (
 	"time"
+
 	"github.com/concourse/time-resource/models"
 )
+
+var DEFAULT_TIME_OF_DAY = models.TimeOfDay(time.Duration(0))
 
 type TimeLord struct {
 	PreviousTime time.Time
@@ -59,23 +62,28 @@ func (tl TimeLord) daysMatch(now time.Time) bool {
 
 func (tl TimeLord) latestRangeBefore(reference time.Time) (time.Time, time.Time) {
 
-	if tl.Start == nil || tl.Stop == nil {
-		return time.Time{}, time.Time{}
+	tlStart := DEFAULT_TIME_OF_DAY
+	if tl.Start != nil {
+		tlStart = *tl.Start
+	}
+	tlStop := DEFAULT_TIME_OF_DAY
+	if tl.Stop != nil {
+		tlStop = *tl.Stop
 	}
 
 	refInLoc := reference.In(tl.loc())
 
 	start := time.Date(refInLoc.Year(), refInLoc.Month(), refInLoc.Day(),
-		tl.Start.Hour(), tl.Start.Minute(), 0, 0, tl.loc())
+		tlStart.Hour(), tlStart.Minute(), 0, 0, tl.loc())
 
 	if start.After(refInLoc) {
 		start = start.AddDate(0, 0, -1)
 	}
 
 	stop := time.Date(start.Year(), start.Month(), start.Day(),
-		tl.Stop.Hour(), tl.Stop.Minute(), 0, 0, tl.loc())
+		tlStop.Hour(), tlStop.Minute(), 0, 0, tl.loc())
 
-	if stop.Before(start) {
+	if !stop.After(start) {
 		stop = stop.AddDate(0, 0, 1)
 	}
 
