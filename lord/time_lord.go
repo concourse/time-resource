@@ -44,6 +44,94 @@ func (tl TimeLord) Check(now time.Time) bool {
 	return false
 }
 
+func (tl TimeLord) Latest(reference time.Time) time.Time {
+	if tl.PreviousTime.After(reference) {
+		return time.Time{}
+	}
+
+	refInLoc := reference.In(tl.loc())
+	for !tl.daysMatch(refInLoc) {
+		refInLoc = refInLoc.AddDate(0, 0, -1)
+	}
+
+	start, stop := tl.latestRangeBefore(refInLoc)
+
+	if tl.PreviousTime.IsZero() && !reference.Before(stop) {
+		return time.Time{}
+	}
+
+	if tl.Interval == nil {
+		if tl.PreviousTime.After(start) {
+			return time.Time{}
+		}
+		return start
+	}
+
+	tlDuration := time.Duration(*tl.Interval)
+
+	var latestValidTime time.Time
+	for intervalTime := start; !intervalTime.After(reference) && intervalTime.Before(stop); intervalTime = intervalTime.Add(tlDuration) {
+		latestValidTime = intervalTime
+	}
+	return latestValidTime
+}
+
+func (tl TimeLord) List(reference time.Time) []time.Time {
+	start := tl.PreviousTime
+
+	var addForRange func(time.Time, time.Time)
+	versions := []time.Time{}
+
+	if tl.Interval == nil {
+
+		if start.IsZero() {
+			refRangeStart, refRangeEnd := tl.latestRangeBefore(reference)
+			if !reference.Before(refRangeEnd) {
+				return versions
+			}
+			start = refRangeStart
+		}
+
+		addForRange = func(dailyStart, _ time.Time) {
+			if !dailyStart.Before(start) && !dailyStart.After(reference) {
+				versions = append(versions, dailyStart)
+			}
+		}
+
+	} else {
+		tlDuration := time.Duration(*tl.Interval)
+
+		if start.IsZero() {
+			start = reference
+		}
+
+		addForRange = func(dailyStart, dailyEnd time.Time) {
+			intervalTime := dailyStart.Truncate(tlDuration)
+
+			for intervalTime.Before(dailyStart) || intervalTime.Before(start) {
+				intervalTime = intervalTime.Add(tlDuration)
+			}
+
+			for !intervalTime.After(reference) && intervalTime.Before(dailyEnd) {
+				versions = append(versions, intervalTime)
+				intervalTime = intervalTime.Add(tlDuration)
+			}
+		}
+	}
+
+	var dailyStart, dailyEnd time.Time
+	for dailyInterval := start; !dailyStart.After(reference); dailyInterval = dailyInterval.AddDate(0, 0, 1) {
+		if tl.daysMatch(dailyInterval) {
+			dailyStart, dailyEnd = tl.latestRangeBefore(dailyInterval)
+			if dailyStart.After(reference) {
+				break
+			}
+			addForRange(dailyStart, dailyEnd)
+		}
+	}
+	return versions
+}
+
 func (tl TimeLord) daysMatch(now time.Time) bool {
 	if len(tl.Days) == 0 {
 		return true
