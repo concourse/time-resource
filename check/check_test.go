@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
 	"github.com/concourse/time-resource/models"
@@ -112,25 +111,6 @@ var _ = Describe("Check", func() {
 					It("outputs a version containing the current time", func() {
 						Expect(response).To(HaveLen(1))
 						Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
-					})
-				})
-
-				Context("when the range is given in another timezone", func() {
-					BeforeEach(func() {
-						loc := time.FixedZone("LaLaLand", -(60 * 60 * 4))
-
-						start := now.Add(-1 * time.Hour).In(loc)
-						stop := now.Add(1 * time.Hour).In(loc)
-
-						source["start"] = tod(start.Hour(), start.Minute(), -4)
-						source["stop"] = tod(stop.Hour(), stop.Minute(), -4)
-					})
-
-					Context("when no version is given", func() {
-						It("outputs a version containing the current time", func() {
-							Expect(response).To(HaveLen(1))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
-						})
 					})
 				})
 
@@ -543,57 +523,6 @@ var _ = Describe("Check", func() {
 						Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 					})
 				})
-			})
-		})
-	})
-
-	Context("with invalid inputs", func() {
-		var source map[string]interface{}
-		var version map[string]string
-		var session *gexec.Session
-
-		BeforeEach(func() {
-			source = map[string]interface{}{}
-			version = nil
-		})
-
-		JustBeforeEach(func() {
-			stdin, err := checkCmd.StdinPipe()
-			Expect(err).NotTo(HaveOccurred())
-
-			session, err = gexec.Start(checkCmd, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = json.NewEncoder(stdin).Encode(map[string]interface{}{
-				"source":  source,
-				"version": version,
-			})
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		Context("with a missing stop", func() {
-			BeforeEach(func() {
-				source["start"] = tod(3, 4, -7)
-			})
-
-			It("returns an error", func() {
-				<-session.Exited
-
-				Expect(session.Err).To(gbytes.Say("must configure 'stop' if 'start' is set"))
-				Expect(session.ExitCode()).To(Equal(1))
-			})
-		})
-
-		Context("with a missing start", func() {
-			BeforeEach(func() {
-				source["stop"] = tod(3, 4, -7)
-			})
-
-			It("returns an error", func() {
-				<-session.Exited
-
-				Expect(session.Err).To(gbytes.Say("must configure 'start' if 'stop' is set"))
-				Expect(session.ExitCode()).To(Equal(1))
 			})
 		})
 	})
