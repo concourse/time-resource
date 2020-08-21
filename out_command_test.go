@@ -1,37 +1,43 @@
-package main_test
+package resource_test
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
-	"os/exec"
-	"path"
 	"strings"
 	"time"
 
+	resource "github.com/concourse/time-resource"
 	"github.com/concourse/time-resource/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("Out", func() {
-	var tmpdir string
-	var source string
+	var (
+		now time.Time
 
-	var outCmd *exec.Cmd
-	var now time.Time
+		tmpdir string
+
+		source   models.Source
+		response models.OutResponse
+
+		err error
+	)
 
 	BeforeEach(func() {
-		var err error
+		now = time.Now().UTC()
 
 		tmpdir, err = ioutil.TempDir("", "out-source")
 		Expect(err).NotTo(HaveOccurred())
 
-		source = path.Join(tmpdir, "out-dir")
+		source = models.Source{}
+	})
 
-		outCmd = exec.Command(outPath, source)
-		now = time.Now().UTC()
+	JustBeforeEach(func() {
+		command := resource.OutCommand{}
+		response, err = command.Run(models.OutRequest{
+			Source: source,
+		})
 	})
 
 	AfterEach(func() {
@@ -39,42 +45,19 @@ var _ = Describe("Out", func() {
 	})
 
 	Context("when executed", func() {
-		var source map[string]interface{}
-		var response models.OutResponse
-
-		BeforeEach(func() {
-			source = map[string]interface{}{}
-			response = models.OutResponse{}
-		})
 
 		JustBeforeEach(func() {
-			stdin, err := outCmd.StdinPipe()
-			Expect(err).NotTo(HaveOccurred())
-
-			session, err := gexec.Start(outCmd, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = json.NewEncoder(stdin).Encode(map[string]interface{}{
-				"source": source,
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			<-session.Exited
-			Expect(session.ExitCode()).To(Equal(0))
-
-			err = json.Unmarshal(session.Out.Contents(), &response)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("when a location is specified", func() {
-			var loc *time.Location
 
 			BeforeEach(func() {
-				var err error
-				loc, err = time.LoadLocation("America/Indiana/Indianapolis")
+				loc, err := time.LoadLocation("America/Indiana/Indianapolis")
 				Expect(err).ToNot(HaveOccurred())
 
-				source["location"] = loc.String()
+				srcLoc := models.Location(*loc)
+				source.Location = &srcLoc
 
 				now = now.In(loc)
 			})
