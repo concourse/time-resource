@@ -2,11 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"io"
+	"fmt"
 	"os"
-	"path/filepath"
-	"time"
 
+	resource "github.com/concourse/time-resource"
 	"github.com/concourse/time-resource/models"
 )
 
@@ -18,39 +17,21 @@ func main() {
 
 	destination := os.Args[1]
 
-	err := os.MkdirAll(destination, 0755)
-	if err != nil {
-		fatal("creating destination", err)
-	}
-
-	file, err := os.Create(filepath.Join(destination, "input"))
-	if err != nil {
-		fatal("creating input file", err)
-	}
-
-	defer file.Close()
-
 	var request models.InRequest
 
-	err = json.NewDecoder(io.TeeReader(os.Stdin, file)).Decode(&request)
+	err := json.NewDecoder(os.Stdin).Decode(&request)
 	if err != nil {
-		fatal("reading request", err)
+		fmt.Fprintln(os.Stderr, "parse error:", err.Error())
+		os.Exit(1)
 	}
 
-	versionTime := request.Version.Time
-	if versionTime.IsZero() {
-		versionTime = time.Now()
+	command := resource.InCommand{}
+
+	response, err := command.Run(destination, request)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "running command:", err.Error())
+		os.Exit(1)
 	}
 
-	inVersion := request.Version
-	inVersion.Time = versionTime
-
-	json.NewEncoder(os.Stdout).Encode(models.InResponse{
-		Version: inVersion,
-	})
-}
-
-func fatal(doing string, err error) {
-	println("error " + doing + ": " + err.Error())
-	os.Exit(1)
+	json.NewEncoder(os.Stdout).Encode(response)
 }
