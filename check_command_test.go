@@ -1,61 +1,43 @@
-package main_test
+package resource_test
 
 import (
-	"encoding/json"
-	"fmt"
-	"os/exec"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/onsi/gomega/gexec"
-
+	resource "github.com/concourse/time-resource"
 	"github.com/concourse/time-resource/models"
 )
 
 var _ = Describe("Check", func() {
 	var (
-		checkCmd *exec.Cmd
-		now      time.Time
+		now time.Time
 	)
 
 	BeforeEach(func() {
 		now = time.Now().UTC()
 	})
 
-	BeforeEach(func() {
-		checkCmd = exec.Command(checkPath)
-	})
-
 	Context("when executed", func() {
-		var source map[string]interface{}
-		var version *models.Version
+		var source models.Source
+		var version models.Version
 		var response models.CheckResponse
 
 		BeforeEach(func() {
-			source = map[string]interface{}{}
-			version = nil
+			source = models.Source{}
+			version = models.Version{}
 			response = models.CheckResponse{}
 		})
 
 		JustBeforeEach(func() {
-			stdin, err := checkCmd.StdinPipe()
-			Expect(err).NotTo(HaveOccurred())
+			command := resource.CheckCommand{}
 
-			session, err := gexec.Start(checkCmd, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = json.NewEncoder(stdin).Encode(map[string]interface{}{
-				"source":  source,
-				"version": version,
+			var err error
+			response, err = command.Run(models.CheckRequest{
+				Source:  source,
+				Version: version,
 			})
-			Expect(err).NotTo(HaveOccurred())
-
-			<-session.Exited
-			Expect(session.ExitCode()).To(Equal(0))
-
-			err = json.Unmarshal(session.Out.Contents(), &response)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -73,7 +55,7 @@ var _ = Describe("Check", func() {
 				Context("when the resource has already triggered on the current day", func() {
 					BeforeEach(func() {
 						prev = time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, now.Second(), now.Nanosecond(), now.Location())
-						version = &models.Version{Time: prev}
+						version.Time = prev
 					})
 
 					It("outputs a supplied version", func() {
@@ -85,7 +67,7 @@ var _ = Describe("Check", func() {
 				Context("when the resource was triggered yesterday", func() {
 					BeforeEach(func() {
 						prev = now.Add(-24 * time.Hour)
-						version = &models.Version{Time: prev}
+						version.Time = prev
 					})
 
 					It("outputs a version containing the current time and supplied version", func() {
@@ -103,8 +85,8 @@ var _ = Describe("Check", func() {
 					start := now.Add(-1 * time.Hour)
 					stop := now.Add(1 * time.Hour)
 
-					source["start"] = tod(start.Hour(), start.Minute(), 0)
-					source["stop"] = tod(stop.Hour(), stop.Minute(), 0)
+					source.Start = tod(start.Hour(), start.Minute(), 0)
+					source.Stop = tod(stop.Hour(), stop.Minute(), 0)
 				})
 
 				Context("when no version is given", func() {
@@ -120,7 +102,7 @@ var _ = Describe("Check", func() {
 					Context("when the resource has already triggered with in the current time range", func() {
 						BeforeEach(func() {
 							prev = now.Add(-30 * time.Minute)
-							version = &models.Version{Time: prev}
+							version.Time = prev
 						})
 
 						It("outputs a supplied version", func() {
@@ -132,7 +114,7 @@ var _ = Describe("Check", func() {
 					Context("when the resource was triggered yesterday near the end of the time frame", func() {
 						BeforeEach(func() {
 							prev = now.Add(-23 * time.Hour)
-							version = &models.Version{Time: prev}
+							version.Time = prev
 						})
 
 						It("outputs a version containing the current time and supplied version", func() {
@@ -145,7 +127,7 @@ var _ = Describe("Check", func() {
 					Context("when the resource was triggered last year near the end of the time frame", func() {
 						BeforeEach(func() {
 							prev = now.AddDate(-1, 0, 0)
-							version = &models.Version{Time: prev}
+							version.Time = prev
 						})
 
 						It("outputs a version containing the current time and supplied version", func() {
@@ -158,7 +140,7 @@ var _ = Describe("Check", func() {
 					Context("when the resource was triggered yesterday in the current time frame", func() {
 						BeforeEach(func() {
 							prev = now.Add(-24 * time.Hour)
-							version = &models.Version{Time: prev}
+							version.Time = prev
 						})
 
 						It("outputs a version containing the current time and supplied version", func() {
@@ -171,7 +153,8 @@ var _ = Describe("Check", func() {
 
 				Context("when an interval is specified", func() {
 					BeforeEach(func() {
-						source["interval"] = "1m"
+						interval := models.Interval(time.Minute)
+						source.Interval = &interval
 					})
 
 					Context("when no version is given", func() {
@@ -187,7 +170,7 @@ var _ = Describe("Check", func() {
 						Context("when the interval has not elapsed", func() {
 							BeforeEach(func() {
 								prev = now
-								version = &models.Version{Time: prev}
+								version.Time = prev
 							})
 
 							It("outputs only the supplied version", func() {
@@ -199,7 +182,7 @@ var _ = Describe("Check", func() {
 						Context("when the interval has elapsed", func() {
 							BeforeEach(func() {
 								prev = now.Add(-1 * time.Minute)
-								version = &models.Version{Time: prev}
+								version.Time = prev
 							})
 
 							It("outputs a version containing the current time and supplied version", func() {
@@ -212,7 +195,7 @@ var _ = Describe("Check", func() {
 						Context("with its time N intervals ago", func() {
 							BeforeEach(func() {
 								prev = now.Add(-5 * time.Minute)
-								version = &models.Version{Time: prev}
+								version.Time = prev
 							})
 
 							It("outputs a version containing the current time and supplied version", func() {
@@ -226,9 +209,9 @@ var _ = Describe("Check", func() {
 
 				Context("when the current day is specified", func() {
 					BeforeEach(func() {
-						source["days"] = []string{
-							now.Weekday().String(),
-							now.AddDate(0, 0, 2).Weekday().String(),
+						source.Days = []models.Weekday{
+							models.Weekday(now.Weekday()),
+							models.Weekday(now.AddDate(0, 0, 2).Weekday()),
 						}
 					})
 
@@ -240,9 +223,9 @@ var _ = Describe("Check", func() {
 
 				Context("when we are out of the specified day", func() {
 					BeforeEach(func() {
-						source["days"] = []string{
-							now.AddDate(0, 0, 1).Weekday().String(),
-							now.AddDate(0, 0, 2).Weekday().String(),
+						source.Days = []models.Weekday{
+							models.Weekday(now.AddDate(0, 0, 1).Weekday()),
+							models.Weekday(now.AddDate(0, 0, 2).Weekday()),
 						}
 					})
 
@@ -257,8 +240,8 @@ var _ = Describe("Check", func() {
 					start := now.Add(6 * time.Hour)
 					stop := now.Add(7 * time.Hour)
 
-					source["start"] = tod(start.Hour(), start.Minute(), 0)
-					source["stop"] = tod(stop.Hour(), stop.Minute(), 0)
+					source.Start = tod(start.Hour(), start.Minute(), 0)
+					source.Stop = tod(stop.Hour(), stop.Minute(), 0)
 				})
 
 				Context("when no version is given", func() {
@@ -272,9 +255,11 @@ var _ = Describe("Check", func() {
 						start := now.Add(6 * time.Hour)
 						stop := now.Add(7 * time.Hour)
 
-						source["start"] = tod(start.Hour(), start.Minute(), 0)
-						source["stop"] = tod(stop.Hour(), stop.Minute(), 0)
-						source["interval"] = "1m"
+						source.Start = tod(start.Hour(), start.Minute(), 0)
+						source.Stop = tod(stop.Hour(), stop.Minute(), 0)
+
+						interval := models.Interval(time.Minute)
+						source.Interval = &interval
 					})
 
 					It("does not output any versions", func() {
@@ -291,7 +276,8 @@ var _ = Describe("Check", func() {
 					loc, err = time.LoadLocation("America/Indiana/Indianapolis")
 					Expect(err).ToNot(HaveOccurred())
 
-					source["location"] = loc.String()
+					srcLoc := models.Location(*loc)
+					source.Location = &srcLoc
 
 					now = now.In(loc)
 				})
@@ -301,8 +287,8 @@ var _ = Describe("Check", func() {
 						start := now.Add(-1 * time.Hour)
 						stop := now.Add(1 * time.Hour)
 
-						source["start"] = tod(start.Hour(), start.Minute(), 0)
-						source["stop"] = tod(stop.Hour(), stop.Minute(), 0)
+						source.Start = tod(start.Hour(), start.Minute(), 0)
+						source.Stop = tod(stop.Hour(), stop.Minute(), 0)
 					})
 
 					Context("when no version is given", func() {
@@ -318,7 +304,7 @@ var _ = Describe("Check", func() {
 						Context("when the resource has already triggered with in the current time range", func() {
 							BeforeEach(func() {
 								prev = now.Add(-30 * time.Minute)
-								version = &models.Version{Time: prev}
+								version.Time = prev
 							})
 
 							It("outputs a supplied version", func() {
@@ -330,7 +316,7 @@ var _ = Describe("Check", func() {
 						Context("when the resource was triggered yesterday near the end of the time frame", func() {
 							BeforeEach(func() {
 								prev = now.Add(-23 * time.Hour)
-								version = &models.Version{Time: prev}
+								version.Time = prev
 							})
 
 							It("outputs a version containing the current time and supplied version", func() {
@@ -343,7 +329,7 @@ var _ = Describe("Check", func() {
 						Context("when the resource was triggered yesterday in the current time frame", func() {
 							BeforeEach(func() {
 								prev = now.AddDate(0, 0, -1)
-								version = &models.Version{Time: prev}
+								version.Time = prev
 							})
 
 							It("outputs a version containing the current time and supplied version", func() {
@@ -356,7 +342,8 @@ var _ = Describe("Check", func() {
 
 					Context("when an interval is specified", func() {
 						BeforeEach(func() {
-							source["interval"] = "1m"
+							interval := models.Interval(time.Minute)
+							source.Interval = &interval
 						})
 
 						Context("when no version is given", func() {
@@ -372,7 +359,7 @@ var _ = Describe("Check", func() {
 							Context("with its time within the interval", func() {
 								BeforeEach(func() {
 									prev = now
-									version = &models.Version{Time: prev}
+									version.Time = prev
 								})
 
 								It("outputs the given version", func() {
@@ -384,7 +371,7 @@ var _ = Describe("Check", func() {
 							Context("with its time one interval ago", func() {
 								BeforeEach(func() {
 									prev = now.Add(-1 * time.Minute)
-									version = &models.Version{Time: prev}
+									version.Time = prev
 								})
 
 								It("outputs a version containing the current time and supplied version", func() {
@@ -397,7 +384,7 @@ var _ = Describe("Check", func() {
 							Context("with its time N intervals ago", func() {
 								BeforeEach(func() {
 									prev = now.Add(-5 * time.Minute)
-									version = &models.Version{Time: prev}
+									version.Time = prev
 								})
 
 								It("outputs a version containing the current time and supplied version", func() {
@@ -411,9 +398,9 @@ var _ = Describe("Check", func() {
 
 					Context("when the current day is specified", func() {
 						BeforeEach(func() {
-							source["days"] = []string{
-								now.Weekday().String(),
-								now.AddDate(0, 0, 2).Weekday().String(),
+							source.Days = []models.Weekday{
+								models.Weekday(now.Weekday()),
+								models.Weekday(now.AddDate(0, 0, 2).Weekday()),
 							}
 						})
 
@@ -425,9 +412,9 @@ var _ = Describe("Check", func() {
 
 					Context("when we are out of the specified day", func() {
 						BeforeEach(func() {
-							source["days"] = []string{
-								now.AddDate(0, 0, 1).Weekday().String(),
-								now.AddDate(0, 0, 2).Weekday().String(),
+							source.Days = []models.Weekday{
+								models.Weekday(now.AddDate(0, 0, 1).Weekday()),
+								models.Weekday(now.AddDate(0, 0, 2).Weekday()),
 							}
 						})
 
@@ -442,8 +429,8 @@ var _ = Describe("Check", func() {
 						start := now.Add(6 * time.Hour)
 						stop := now.Add(7 * time.Hour)
 
-						source["start"] = tod(start.Hour(), start.Minute(), 0)
-						source["stop"] = tod(stop.Hour(), stop.Minute(), 0)
+						source.Start = tod(start.Hour(), start.Minute(), 0)
+						source.Stop = tod(stop.Hour(), stop.Minute(), 0)
 					})
 
 					Context("when no version is given", func() {
@@ -457,10 +444,11 @@ var _ = Describe("Check", func() {
 							start := now.Add(6 * time.Hour)
 							stop := now.Add(7 * time.Hour)
 
-							source["start"] = tod(start.Hour(), start.Minute(), 0)
-							source["stop"] = tod(stop.Hour(), stop.Minute(), 0)
+							source.Start = tod(start.Hour(), start.Minute(), 0)
+							source.Stop = tod(stop.Hour(), stop.Minute(), 0)
 
-							source["interval"] = "1m"
+							interval := models.Interval(time.Minute)
+							source.Interval = &interval
 						})
 
 						It("does not output any versions", func() {
@@ -473,7 +461,8 @@ var _ = Describe("Check", func() {
 
 		Context("when an interval is specified", func() {
 			BeforeEach(func() {
-				source["interval"] = "1m"
+				interval := models.Interval(time.Minute)
+				source.Interval = &interval
 			})
 
 			Context("when no version is given", func() {
@@ -489,7 +478,7 @@ var _ = Describe("Check", func() {
 				Context("with its time within the interval", func() {
 					BeforeEach(func() {
 						prev = now
-						version = &models.Version{Time: prev}
+						version.Time = prev
 					})
 
 					It("outputs a supplied version", func() {
@@ -501,7 +490,7 @@ var _ = Describe("Check", func() {
 				Context("with its time one interval ago", func() {
 					BeforeEach(func() {
 						prev = now.Add(-1 * time.Minute)
-						version = &models.Version{Time: prev}
+						version.Time = prev
 					})
 
 					It("outputs a version containing the current time and supplied version", func() {
@@ -514,7 +503,7 @@ var _ = Describe("Check", func() {
 				Context("with its time N intervals ago", func() {
 					BeforeEach(func() {
 						prev = now.Add(-5 * time.Minute)
-						version = &models.Version{Time: prev}
+						version.Time = prev
 					})
 
 					It("outputs a version containing the current time and supplied version", func() {
@@ -528,13 +517,14 @@ var _ = Describe("Check", func() {
 	})
 })
 
-func tod(hours, minutes, offset int) string {
-	var o string
-	if offset < 0 {
-		o = fmt.Sprintf(" -%02d00", -offset)
-	} else if offset > 0 {
-		o = fmt.Sprintf(" +%02d00", offset)
+func tod(hours, minutes, offset int) *models.TimeOfDay {
+	loc := time.UTC
+	if offset != 0 {
+		loc = time.FixedZone("UnitTest", 60*60*offset)
 	}
 
-	return fmt.Sprintf("%d:%02d%s", hours, minutes, o)
+	now := time.Now()
+	tod := models.NewTimeOfDay(time.Date(now.Year(), now.Month(), now.Day(), hours, minutes, 0, 0, loc))
+
+	return &tod
 }
