@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
+	resource "github.com/concourse/time-resource"
 	"github.com/concourse/time-resource/models"
 )
 
@@ -18,17 +18,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	currentTime := time.Now().UTC()
-	specifiedLocation := request.Source.Location
-	if specifiedLocation != nil {
-		currentTime = currentTime.In((*time.Location)(specifiedLocation))
+	command := resource.OutCommand{}
+
+	response, err := command.Run(request)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "running command:", err.Error())
+		os.Exit(1)
 	}
 
-	outVersion := models.Version{
-		Time: currentTime,
-	}
-
-	json.NewEncoder(os.Stdout).Encode(models.OutResponse{
-		Version: outVersion,
-	})
+	json.NewEncoder(os.Stdout).Encode(response)
 }
