@@ -41,6 +41,8 @@ var xlargeOffset = testEnvironment{
 	hashPercentile: 0.77989363246,
 }
 
+var defaultOffset = xsmallOffset
+
 var _ = Describe("Offset", func() {
 	originalTeam := os.Getenv(resource.BUILD_TEAM_NAME)
 	originalPipeline := os.Getenv(resource.BUILD_PIPELINE_NAME)

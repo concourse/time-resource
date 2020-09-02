@@ -83,8 +83,7 @@ destination.
 
 ### `out`: Produce the current time.
 
-Returns a version for the current timestamp. This can be used to record the
-time within a build plan, e.g. after running some long-running task.
+Returns a version for most recent timestamp that satisfies the configuration.
 
 #### Parameters
 
