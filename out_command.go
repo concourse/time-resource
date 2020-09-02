@@ -10,7 +10,7 @@ type OutCommand struct {
 }
 
 func (*OutCommand) Run(request models.OutRequest) (models.OutResponse, error) {
-	currentTime := time.Now().UTC()
+	currentTime := GetCurrentTime()
 	specifiedLocation := request.Source.Location
 	if specifiedLocation != nil {
 		currentTime = currentTime.In((*time.Location)(specifiedLocation))
