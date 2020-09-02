@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	resource "github.com/concourse/time-resource"
@@ -74,6 +75,23 @@ var _ = Describe("In", func() {
 			Expect(requested.Source).To(Equal(source))
 		})
 
+		Context("when the requested version is in a different location", func() {
+			BeforeEach(func() {
+				loc, err := time.LoadLocation("America/Indiana/Indianapolis")
+				Expect(err).ToNot(HaveOccurred())
+
+				srcLoc := models.Location(*loc)
+				source.Location = &srcLoc
+			})
+
+			It("reports source's location(offset: -0400) as the version", func() {
+				// An example of response.Version.Time.String() is
+				// 2019-04-03 14:53:10.951241 -0400 EDT
+				contained := strings.Contains(response.Version.Time.String(), "-0400")
+				Expect(contained).To(BeTrue())
+			})
+		})
+
 		Context("when the request has no time in its version", func() {
 			BeforeEach(func() {
 				version = models.Version{}
@@ -81,6 +99,23 @@ var _ = Describe("In", func() {
 
 			It("reports the current time as the version", func() {
 				Expect(response.Version.Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+			})
+
+			Context("when a location is specified", func() {
+				BeforeEach(func() {
+					loc, err := time.LoadLocation("America/Indiana/Indianapolis")
+					Expect(err).ToNot(HaveOccurred())
+
+					srcLoc := models.Location(*loc)
+					source.Location = &srcLoc
+				})
+
+				It("reports specified location's current time(offset: -0400) as the version", func() {
+					// An example of response.Version.Time.String() is
+					// 2019-04-03 14:53:10.951241 -0400 EDT
+					contained := strings.Contains(response.Version.Time.String(), "-0400")
+					Expect(contained).To(BeTrue())
+				})
 			})
 		})
 	})
