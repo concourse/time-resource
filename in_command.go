@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/concourse/time-resource/models"
 )
@@ -33,7 +32,7 @@ func (*InCommand) Run(destination string, request models.InRequest) (models.InRe
 
 	versionTime := request.Version.Time
 	if versionTime.IsZero() {
-		versionTime = time.Now()
+		versionTime = GetCurrentTime()
 	}
 
 	inVersion := models.Version{Time: versionTime}
