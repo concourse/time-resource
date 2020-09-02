@@ -17,7 +17,7 @@ func (*CheckCommand) Run(request models.CheckRequest) ([]models.Version, error) 
 	}
 
 	previousTime := request.Version.Time
-	currentTime := time.Now().UTC()
+	currentTime := GetCurrentTime()
 
 	specifiedLocation := request.Source.Location
 	if specifiedLocation != nil {

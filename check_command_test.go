@@ -16,7 +16,7 @@ var _ = Describe("Check", func() {
 	)
 
 	BeforeEach(func() {
-		now = time.Now().UTC()
+		now = resource.GetCurrentTime()
 	})
 
 	Context("when executed", func() {
@@ -45,7 +45,7 @@ var _ = Describe("Check", func() {
 			Context("when no version is given", func() {
 				It("outputs a version containing the current time", func() {
 					Expect(response).To(HaveLen(1))
-					Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+					Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 				})
 			})
 
@@ -73,7 +73,7 @@ var _ = Describe("Check", func() {
 					It("outputs a version containing the current time and supplied version", func() {
 						Expect(response).To(HaveLen(2))
 						Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
-						Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+						Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 					})
 				})
 			})
@@ -92,7 +92,7 @@ var _ = Describe("Check", func() {
 				Context("when no version is given", func() {
 					It("outputs a version containing the current time", func() {
 						Expect(response).To(HaveLen(1))
-						Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 					})
 				})
 
@@ -120,7 +120,7 @@ var _ = Describe("Check", func() {
 						It("outputs a version containing the current time and supplied version", func() {
 							Expect(response).To(HaveLen(2))
 							Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
-							Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 						})
 					})
 
@@ -133,7 +133,7 @@ var _ = Describe("Check", func() {
 						It("outputs a version containing the current time and supplied version", func() {
 							Expect(response).To(HaveLen(2))
 							Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
-							Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 						})
 					})
 
@@ -146,7 +146,7 @@ var _ = Describe("Check", func() {
 						It("outputs a version containing the current time and supplied version", func() {
 							Expect(response).To(HaveLen(2))
 							Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
-							Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 						})
 					})
 				})
@@ -160,7 +160,7 @@ var _ = Describe("Check", func() {
 					Context("when no version is given", func() {
 						It("outputs a version containing the current time", func() {
 							Expect(response).To(HaveLen(1))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 						})
 					})
 
@@ -188,7 +188,7 @@ var _ = Describe("Check", func() {
 							It("outputs a version containing the current time and supplied version", func() {
 								Expect(response).To(HaveLen(2))
 								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-								Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+								Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 							})
 						})
 
@@ -201,7 +201,7 @@ var _ = Describe("Check", func() {
 							It("outputs a version containing the current time and supplied version", func() {
 								Expect(response).To(HaveLen(2))
 								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-								Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+								Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 							})
 						})
 					})
@@ -217,7 +217,7 @@ var _ = Describe("Check", func() {
 
 					It("outputs a version containing the current time", func() {
 						Expect(response).To(HaveLen(1))
-						Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 					})
 				})
 
@@ -294,7 +294,7 @@ var _ = Describe("Check", func() {
 					Context("when no version is given", func() {
 						It("outputs a version containing the current time", func() {
 							Expect(response).To(HaveLen(1))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 						})
 					})
 
@@ -322,7 +322,7 @@ var _ = Describe("Check", func() {
 							It("outputs a version containing the current time and supplied version", func() {
 								Expect(response).To(HaveLen(2))
 								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-								Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+								Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 							})
 						})
 
@@ -335,7 +335,7 @@ var _ = Describe("Check", func() {
 							It("outputs a version containing the current time and supplied version", func() {
 								Expect(response).To(HaveLen(2))
 								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-								Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+								Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 							})
 						})
 					})
@@ -349,7 +349,7 @@ var _ = Describe("Check", func() {
 						Context("when no version is given", func() {
 							It("outputs a version containing the current time", func() {
 								Expect(response).To(HaveLen(1))
-								Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+								Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 							})
 						})
 
@@ -377,7 +377,7 @@ var _ = Describe("Check", func() {
 								It("outputs a version containing the current time and supplied version", func() {
 									Expect(response).To(HaveLen(2))
 									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-									Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+									Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 								})
 							})
 
@@ -390,7 +390,7 @@ var _ = Describe("Check", func() {
 								It("outputs a version containing the current time and supplied version", func() {
 									Expect(response).To(HaveLen(2))
 									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-									Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+									Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 								})
 							})
 						})
@@ -406,7 +406,7 @@ var _ = Describe("Check", func() {
 
 						It("outputs a version containing the current time", func() {
 							Expect(response).To(HaveLen(1))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+							Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 						})
 					})
 
@@ -468,7 +468,7 @@ var _ = Describe("Check", func() {
 			Context("when no version is given", func() {
 				It("outputs a version containing the current time", func() {
 					Expect(response).To(HaveLen(1))
-					Expect(response[0].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+					Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 				})
 			})
 
@@ -496,7 +496,7 @@ var _ = Describe("Check", func() {
 					It("outputs a version containing the current time and supplied version", func() {
 						Expect(response).To(HaveLen(2))
 						Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-						Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+						Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 					})
 				})
 
@@ -509,7 +509,7 @@ var _ = Describe("Check", func() {
 					It("outputs a version containing the current time and supplied version", func() {
 						Expect(response).To(HaveLen(2))
 						Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-						Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+						Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
 					})
 				})
 			})
@@ -523,7 +523,7 @@ func tod(hours, minutes, offset int) *models.TimeOfDay {
 		loc = time.FixedZone("UnitTest", 60*60*offset)
 	}
 
-	now := time.Now()
+	now := resource.GetCurrentTime()
 	tod := models.NewTimeOfDay(time.Date(now.Year(), now.Month(), now.Day(), hours, minutes, 0, 0, loc))
 
 	return &tod
