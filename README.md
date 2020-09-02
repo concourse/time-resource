@@ -73,7 +73,8 @@ given version, or if there is no version given.
 
 ### `in`: Report the given time.
 
-Fetches the given timestamp, writing the request's metadata to `input` in the
+Returns a version for most recent timestamp that satisfies the configuration which is
+at/before the given timestamp. The request's metadata is written to `input` in the
 destination.
 
 #### Parameters

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/concourse/time-resource/lord"
 	"github.com/concourse/time-resource/models"
 )
 
@@ -31,17 +32,23 @@ func (*InCommand) Run(destination string, request models.InRequest) (models.InRe
 		return models.InResponse{}, fmt.Errorf("writing input file: %w", err)
 	}
 
-	versionTime := request.Version.Time
-	if versionTime.IsZero() {
-		versionTime = GetCurrentTime()
+	requestedVersionTime := request.Version.Time
+	if requestedVersionTime.IsZero() {
+		requestedVersionTime = GetCurrentTime()
 	}
 
-	specifiedLocation := request.Source.Location
-	if specifiedLocation != nil {
-		versionTime = versionTime.In((*time.Location)(specifiedLocation))
+	tl := lord.TimeLord{
+		PreviousTime: time.Time{},
+		Location:     request.Source.Location,
+		Start:        request.Source.Start,
+		Stop:         request.Source.Stop,
+		Interval:     request.Source.Interval,
+		Days:         request.Source.Days,
 	}
+	latestTime := tl.Latest(requestedVersionTime)
+	offsetTime := Offset(tl, latestTime)
 
-	inVersion := models.Version{Time: versionTime}
+	inVersion := models.Version{Time: offsetTime}
 	response := models.InResponse{Version: inVersion}
 
 	return response, nil
