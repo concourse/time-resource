@@ -1,8 +1,6 @@
 package resource
 
 import (
-	"time"
-
 	"github.com/concourse/time-resource/lord"
 	"github.com/concourse/time-resource/models"
 )
@@ -16,31 +14,30 @@ func (*CheckCommand) Run(request models.CheckRequest) ([]models.Version, error) 
 		return nil, err
 	}
 
-	previousTime := request.Version.Time
 	currentTime := GetCurrentTime()
 
-	specifiedLocation := request.Source.Location
-	if specifiedLocation != nil {
-		currentTime = currentTime.In((*time.Location)(specifiedLocation))
+	tl := lord.TimeLord{
+		Location: request.Source.Location,
+		Start:    request.Source.Start,
+		Stop:     request.Source.Stop,
+		Interval: request.Source.Interval,
+		Days:     request.Source.Days,
 	}
 
-	tl := lord.TimeLord{
-		PreviousTime: previousTime,
-		Location:     specifiedLocation,
-		Start:        request.Source.Start,
-		Stop:         request.Source.Stop,
-		Interval:     request.Source.Interval,
-		Days:         request.Source.Days,
-	}
+	tl.PreviousTime = tl.Latest(request.Version.Time)
+
+	timeList := tl.List(currentTime)
 
 	versions := []models.Version{}
-
-	if !previousTime.IsZero() {
-		versions = append(versions, models.Version{Time: previousTime})
-	}
-
-	if tl.Check(currentTime) {
-		versions = append(versions, models.Version{Time: currentTime})
+	for _, elem := range timeList {
+		offsetTime := Offset(tl, elem)
+		if offsetTime.Before(request.Version.Time) {
+			continue
+		}
+		if offsetTime.After(currentTime) {
+			break
+		}
+		versions = append(versions, models.Version{Time: offsetTime})
 	}
 
 	return versions, nil

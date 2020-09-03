@@ -67,8 +67,9 @@ time period.
 
 ### `check`: Produce timestamps satisfying the interval.
 
-Returns current version and new version only if it has been longer than `interval` since the
-given version, or if there is no version given.
+Returns a list of any new versions for which the `interval` has elapsed since the
+previous version. If no version is given, returns the most recent timestamp that
+satisfies the configuration.
 
 
 ### `in`: Report the given time.

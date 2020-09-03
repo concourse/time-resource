@@ -12,11 +12,15 @@ import (
 
 var _ = Describe("Check", func() {
 	var (
-		now time.Time
+		today time.Time
+		now   time.Time
+
+		latestVersion time.Time
 	)
 
 	BeforeEach(func() {
 		now = resource.GetCurrentTime()
+		today = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	})
 
 	Context("when executed", func() {
@@ -42,38 +46,39 @@ var _ = Describe("Check", func() {
 		})
 
 		Context("when nothing is specified", func() {
+			BeforeEach(func() {
+				rangeDuration := time.Hour * 24
+				latestVersion = today.Add(time.Duration(rangeDuration.Minutes()*defaultOffset.hashPercentile) * time.Minute)
+			})
+
 			Context("when no version is given", func() {
 				It("outputs a version containing the current time", func() {
 					Expect(response).To(HaveLen(1))
-					Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+					Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 				})
 			})
 
 			Context("when a version is given", func() {
-				var prev time.Time
-
 				Context("when the resource has already triggered on the current day", func() {
 					BeforeEach(func() {
-						prev = time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, now.Second(), now.Nanosecond(), now.Location())
-						version.Time = prev
+						version.Time = latestVersion
 					})
 
 					It("outputs a supplied version", func() {
 						Expect(response).To(HaveLen(1))
-						Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
+						Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 					})
 				})
 
 				Context("when the resource was triggered yesterday", func() {
 					BeforeEach(func() {
-						prev = now.Add(-24 * time.Hour)
-						version.Time = prev
+						version.Time = latestVersion.AddDate(0, 0, -1)
 					})
 
 					It("outputs a version containing the current time and supplied version", func() {
 						Expect(response).To(HaveLen(2))
-						Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
-						Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+						Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
+						Expect(response[1].Time.Unix()).To(Equal(latestVersion.Unix()))
 					})
 				})
 			})
@@ -87,66 +92,78 @@ var _ = Describe("Check", func() {
 
 					source.Start = tod(start.Hour(), start.Minute(), 0)
 					source.Stop = tod(stop.Hour(), stop.Minute(), 0)
+
+					rangeDuration := stop.Sub(start)
+					latestVersion = start.Add(time.Duration(rangeDuration.Minutes()*defaultOffset.hashPercentile) * time.Minute)
 				})
 
 				Context("when no version is given", func() {
 					It("outputs a version containing the current time", func() {
 						Expect(response).To(HaveLen(1))
-						Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+						Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 					})
 				})
 
 				Context("when a version is given", func() {
-					var prev time.Time
-
-					Context("when the resource has already triggered with in the current time range", func() {
+					Context("when the resource has already triggered within the current time range", func() {
 						BeforeEach(func() {
-							prev = now.Add(-30 * time.Minute)
-							version.Time = prev
+							version.Time = latestVersion
 						})
 
 						It("outputs a supplied version", func() {
 							Expect(response).To(HaveLen(1))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
+							Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
 						})
 					})
 
 					Context("when the resource was triggered yesterday near the end of the time frame", func() {
 						BeforeEach(func() {
-							prev = now.Add(-23 * time.Hour)
-							version.Time = prev
+							version.Time = now.AddDate(0, 0, -1).Add(59 * time.Minute)
 						})
 
-						It("outputs a version containing the current time and supplied version", func() {
-							Expect(response).To(HaveLen(2))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
-							Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
-						})
-					})
-
-					Context("when the resource was triggered last year near the end of the time frame", func() {
-						BeforeEach(func() {
-							prev = now.AddDate(-1, 0, 0)
-							version.Time = prev
-						})
-
-						It("outputs a version containing the current time and supplied version", func() {
-							Expect(response).To(HaveLen(2))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
-							Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+						It("outputs a version containing the current time, but not supplied verion", func() {
+							Expect(response).To(HaveLen(1))
+							Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 						})
 					})
 
 					Context("when the resource was triggered yesterday in the current time frame", func() {
 						BeforeEach(func() {
-							prev = now.Add(-24 * time.Hour)
-							version.Time = prev
+							version.Time = latestVersion.AddDate(0, 0, -1)
 						})
 
 						It("outputs a version containing the current time and supplied version", func() {
 							Expect(response).To(HaveLen(2))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", prev.Unix(), 1))
-							Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+							Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
+							Expect(response[1].Time.Unix()).To(Equal(latestVersion.Unix()))
+						})
+					})
+
+					Context("when the resource was triggered last year near the end of the time frame", func() {
+						DAYS := 365
+
+						BeforeEach(func() {
+							version.Time = now.AddDate(0, 0, -DAYS).Add(59 * time.Minute)
+						})
+
+						It("outputs a version containing the current time, but not supplied verion", func() {
+							Expect(response).To(HaveLen(DAYS))
+							Expect(response[0].Time.Unix()).To(Not(Equal(version.Time.Unix())))
+							Expect(response[DAYS-1].Time.Unix()).To(Equal(latestVersion.Unix()))
+						})
+					})
+
+					Context("when the resource was triggered last year in the current time frame", func() {
+						DAYS := 365
+
+						BeforeEach(func() {
+							version.Time = latestVersion.AddDate(0, 0, -DAYS)
+						})
+
+						It("outputs a version containing the current time and supplied version", func() {
+							Expect(response).To(HaveLen(DAYS + 1))
+							Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
+							Expect(response[DAYS].Time.Unix()).To(Equal(latestVersion.Unix()))
 						})
 					})
 				})
@@ -155,53 +172,52 @@ var _ = Describe("Check", func() {
 					BeforeEach(func() {
 						interval := models.Interval(time.Minute)
 						source.Interval = &interval
+
+						latestVersion = now.Truncate(time.Minute)
 					})
 
 					Context("when no version is given", func() {
 						It("outputs a version containing the current time", func() {
 							Expect(response).To(HaveLen(1))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+							Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 						})
 					})
 
 					Context("when a version is given", func() {
-						var prev time.Time
-
 						Context("when the interval has not elapsed", func() {
 							BeforeEach(func() {
-								prev = now
-								version.Time = prev
+								version.Time = now
 							})
 
 							It("outputs only the supplied version", func() {
 								Expect(response).To(HaveLen(1))
-								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+								Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 							})
 						})
 
 						Context("when the interval has elapsed", func() {
 							BeforeEach(func() {
-								prev = now.Add(-1 * time.Minute)
-								version.Time = prev
+								version.Time = now.Add(-1 * time.Minute)
 							})
 
 							It("outputs a version containing the current time and supplied version", func() {
 								Expect(response).To(HaveLen(2))
-								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-								Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+								Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
+								Expect(response[1].Time.Unix()).To(Equal(latestVersion.Unix()))
 							})
 						})
 
 						Context("with its time N intervals ago", func() {
+							N_INTERVALS := 5
+
 							BeforeEach(func() {
-								prev = now.Add(-5 * time.Minute)
-								version.Time = prev
+								version.Time = now.Add(-time.Duration(N_INTERVALS) * time.Minute)
 							})
 
 							It("outputs a version containing the current time and supplied version", func() {
-								Expect(response).To(HaveLen(2))
-								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-								Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+								Expect(response).To(HaveLen(N_INTERVALS + 1))
+								Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
+								Expect(response[N_INTERVALS].Time.Unix()).To(Equal(latestVersion.Unix()))
 							})
 						})
 					})
@@ -217,7 +233,7 @@ var _ = Describe("Check", func() {
 
 					It("outputs a version containing the current time", func() {
 						Expect(response).To(HaveLen(1))
-						Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+						Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 					})
 				})
 
@@ -289,53 +305,50 @@ var _ = Describe("Check", func() {
 
 						source.Start = tod(start.Hour(), start.Minute(), 0)
 						source.Stop = tod(stop.Hour(), stop.Minute(), 0)
+
+						rangeDuration := stop.Sub(start)
+						latestVersion = start.Add(time.Duration(rangeDuration.Minutes()*defaultOffset.hashPercentile) * time.Minute).In(loc)
 					})
 
 					Context("when no version is given", func() {
 						It("outputs a version containing the current time", func() {
 							Expect(response).To(HaveLen(1))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+							Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 						})
 					})
 
 					Context("when a version is given", func() {
-						var prev time.Time
-
-						Context("when the resource has already triggered with in the current time range", func() {
+						Context("when the resource has already triggered within the current time range", func() {
 							BeforeEach(func() {
-								prev = now.Add(-30 * time.Minute)
-								version.Time = prev
+								version.Time = latestVersion
 							})
 
 							It("outputs a supplied version", func() {
 								Expect(response).To(HaveLen(1))
-								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+								Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
 							})
 						})
 
 						Context("when the resource was triggered yesterday near the end of the time frame", func() {
 							BeforeEach(func() {
-								prev = now.Add(-23 * time.Hour)
-								version.Time = prev
+								version.Time = now.AddDate(0, 0, -1).Add(59 * time.Minute)
 							})
 
-							It("outputs a version containing the current time and supplied version", func() {
-								Expect(response).To(HaveLen(2))
-								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-								Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+							It("outputs a version containing the current time, but not supplied verion", func() {
+								Expect(response).To(HaveLen(1))
+								Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 							})
 						})
 
 						Context("when the resource was triggered yesterday in the current time frame", func() {
 							BeforeEach(func() {
-								prev = now.AddDate(0, 0, -1)
-								version.Time = prev
+								version.Time = latestVersion.AddDate(0, 0, -1)
 							})
 
 							It("outputs a version containing the current time and supplied version", func() {
 								Expect(response).To(HaveLen(2))
-								Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-								Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+								Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
+								Expect(response[1].Time.Unix()).To(Equal(latestVersion.Unix()))
 							})
 						})
 					})
@@ -344,53 +357,52 @@ var _ = Describe("Check", func() {
 						BeforeEach(func() {
 							interval := models.Interval(time.Minute)
 							source.Interval = &interval
+
+							latestVersion = now
 						})
 
 						Context("when no version is given", func() {
 							It("outputs a version containing the current time", func() {
 								Expect(response).To(HaveLen(1))
-								Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+								Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 							})
 						})
 
 						Context("when a version is given", func() {
-							var prev time.Time
-
 							Context("with its time within the interval", func() {
 								BeforeEach(func() {
-									prev = now
-									version.Time = prev
+									version.Time = now
 								})
 
 								It("outputs the given version", func() {
 									Expect(response).To(HaveLen(1))
-									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+									Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
 								})
 							})
 
 							Context("with its time one interval ago", func() {
 								BeforeEach(func() {
-									prev = now.Add(-1 * time.Minute)
-									version.Time = prev
+									version.Time = now.Add(-1 * time.Minute)
 								})
 
 								It("outputs a version containing the current time and supplied version", func() {
 									Expect(response).To(HaveLen(2))
-									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-									Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+									Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
+									Expect(response[1].Time.Unix()).To(Equal(latestVersion.Unix()))
 								})
 							})
 
 							Context("with its time N intervals ago", func() {
+								N_INTERVALS := 5
+
 								BeforeEach(func() {
-									prev = now.Add(-5 * time.Minute)
-									version.Time = prev
+									version.Time = now.Add(-time.Duration(N_INTERVALS) * time.Minute)
 								})
 
 								It("outputs a version containing the current time and supplied version", func() {
-									Expect(response).To(HaveLen(2))
-									Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-									Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+									Expect(response).To(HaveLen(N_INTERVALS + 1))
+									Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
+									Expect(response[N_INTERVALS].Time.Unix()).To(Equal(latestVersion.Unix()))
 								})
 							})
 						})
@@ -406,7 +418,7 @@ var _ = Describe("Check", func() {
 
 						It("outputs a version containing the current time", func() {
 							Expect(response).To(HaveLen(1))
-							Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+							Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 						})
 					})
 
@@ -463,12 +475,14 @@ var _ = Describe("Check", func() {
 			BeforeEach(func() {
 				interval := models.Interval(time.Minute)
 				source.Interval = &interval
+
+				latestVersion = now
 			})
 
 			Context("when no version is given", func() {
 				It("outputs a version containing the current time", func() {
 					Expect(response).To(HaveLen(1))
-					Expect(response[0].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+					Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 				})
 			})
 
@@ -496,20 +510,22 @@ var _ = Describe("Check", func() {
 					It("outputs a version containing the current time and supplied version", func() {
 						Expect(response).To(HaveLen(2))
 						Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-						Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+						Expect(response[1].Time.Unix()).To(Equal(latestVersion.Unix()))
 					})
 				})
 
 				Context("with its time N intervals ago", func() {
+					N_INTERVALS := 5
+
 					BeforeEach(func() {
-						prev = now.Add(-5 * time.Minute)
+						prev = now.Add(-time.Duration(N_INTERVALS) * time.Minute)
 						version.Time = prev
 					})
 
 					It("outputs a version containing the current time and supplied version", func() {
-						Expect(response).To(HaveLen(2))
+						Expect(response).To(HaveLen(N_INTERVALS + 1))
 						Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
-						Expect(response[1].Time.Unix()).To(BeNumerically("~", resource.GetCurrentTime().Unix(), 1))
+						Expect(response[N_INTERVALS].Time.Unix()).To(Equal(latestVersion.Unix()))
 					})
 				})
 			})
