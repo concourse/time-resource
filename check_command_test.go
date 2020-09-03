@@ -243,10 +243,12 @@ var _ = Describe("Check", func() {
 							models.Weekday(now.AddDate(0, 0, 1).Weekday()),
 							models.Weekday(now.AddDate(0, 0, 2).Weekday()),
 						}
+						latestVersion = latestVersion.AddDate(0, 0, -5)
 					})
 
-					It("does not output any versions", func() {
-						Expect(response).To(BeEmpty())
+					It("outputs the most recent version", func() {
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 					})
 				})
 			})
@@ -258,11 +260,15 @@ var _ = Describe("Check", func() {
 
 					source.Start = tod(start.Hour(), start.Minute(), 0)
 					source.Stop = tod(stop.Hour(), stop.Minute(), 0)
+
+					rangeDuration := stop.Sub(start)
+					latestVersion = start.Add(time.Duration(rangeDuration.Minutes()*defaultOffset.hashPercentile)*time.Minute).AddDate(0, 0, -1)
 				})
 
 				Context("when no version is given", func() {
-					It("does not output any versions", func() {
-						Expect(response).To(BeEmpty())
+					It("outputs the most recent version", func() {
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 					})
 				})
 
@@ -274,12 +280,17 @@ var _ = Describe("Check", func() {
 						source.Start = tod(start.Hour(), start.Minute(), 0)
 						source.Stop = tod(stop.Hour(), stop.Minute(), 0)
 
-						interval := models.Interval(time.Minute)
+						intervalDuration := time.Minute
+
+						interval := models.Interval(intervalDuration)
 						source.Interval = &interval
+
+						latestVersion = stop.Add(-intervalDuration).AddDate(0, 0, -1)
 					})
 
-					It("does not output any versions", func() {
-						Expect(response).To(BeEmpty())
+					It("outputs the most recent version", func() {
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 					})
 				})
 			})
@@ -428,10 +439,12 @@ var _ = Describe("Check", func() {
 								models.Weekday(now.AddDate(0, 0, 1).Weekday()),
 								models.Weekday(now.AddDate(0, 0, 2).Weekday()),
 							}
+							latestVersion = latestVersion.AddDate(0, 0, -5)
 						})
 
-						It("does not output any versions", func() {
-							Expect(response).To(BeEmpty())
+						It("outputs the most recent version", func() {
+							Expect(response).To(HaveLen(1))
+							Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 						})
 					})
 				})
@@ -443,11 +456,19 @@ var _ = Describe("Check", func() {
 
 						source.Start = tod(start.Hour(), start.Minute(), 0)
 						source.Stop = tod(stop.Hour(), stop.Minute(), 0)
+
+						rangeDuration := stop.Sub(start)
+						latestVersion = start.Add(time.Duration(rangeDuration.Minutes()*defaultOffset.hashPercentile) * time.Minute).In(loc)
 					})
 
 					Context("when no version is given", func() {
-						It("does not output any versions", func() {
-							Expect(response).To(BeEmpty())
+						BeforeEach(func() {
+							latestVersion = latestVersion.AddDate(0, 0, -1)
+						})
+
+						It("outputs the most recent version", func() {
+							Expect(response).To(HaveLen(1))
+							Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 						})
 					})
 
@@ -459,12 +480,17 @@ var _ = Describe("Check", func() {
 							source.Start = tod(start.Hour(), start.Minute(), 0)
 							source.Stop = tod(stop.Hour(), stop.Minute(), 0)
 
-							interval := models.Interval(time.Minute)
+							intervalDuration := time.Minute
+
+							interval := models.Interval(intervalDuration)
 							source.Interval = &interval
+
+							latestVersion = stop.Add(-intervalDuration).AddDate(0, 0, -1)
 						})
 
-						It("does not output any versions", func() {
-							Expect(response).To(BeEmpty())
+						It("outputs the most recent version", func() {
+							Expect(response).To(HaveLen(1))
+							Expect(response[0].Time.Unix()).To(Equal(latestVersion.Unix()))
 						})
 					})
 				})

@@ -1,6 +1,8 @@
 package resource
 
 import (
+	"time"
+
 	"github.com/concourse/time-resource/lord"
 	"github.com/concourse/time-resource/models"
 )
@@ -26,10 +28,16 @@ func (*CheckCommand) Run(request models.CheckRequest) ([]models.Version, error) 
 
 	tl.PreviousTime = tl.Latest(request.Version.Time)
 
-	timeList := tl.List(currentTime)
+	var rawTimeList []time.Time
+	if tl.PreviousTime.IsZero() {
+		tl.PreviousTime = currentTime.AddDate(0, 0, -7)
+		rawTimeList = []time.Time{tl.Latest(currentTime)}
+	} else {
+		rawTimeList = tl.List(currentTime)
+	}
 
-	versions := []models.Version{}
-	for _, elem := range timeList {
+	var versions []models.Version
+	for _, elem := range rawTimeList {
 		offsetTime := Offset(tl, elem)
 		if offsetTime.Before(request.Version.Time) {
 			continue
