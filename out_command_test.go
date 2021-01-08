@@ -45,13 +45,11 @@ var _ = Describe("Out", func() {
 	})
 
 	Context("when executed", func() {
-
 		JustBeforeEach(func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("when a location is specified", func() {
-
 			BeforeEach(func() {
 				loc, err := time.LoadLocation("America/Indiana/Indianapolis")
 				Expect(err).ToNot(HaveOccurred())
@@ -62,15 +60,16 @@ var _ = Describe("Out", func() {
 				now = now.In(loc)
 			})
 
-			It("reports specified location's current time(offset: -0400) as the version", func() {
-				// An example of response.Version.Time.String() is
-				// 2019-04-03 14:53:10.951241 -0400 EDT
-				contained := strings.Contains(response.Version.Time.String(), "-0400")
-				Expect(contained).To(BeTrue())
+			It("reports specified location's current time (offset: -0400) as the version", func() {
+				_, expectedOffset := now.Zone()
+
+				_, versionOffset := response.Version.Time.Zone()
+				Expect(versionOffset).To(Equal(expectedOffset))
 			})
 		})
+
 		Context("when a location is not specified", func() {
-			It("reports the current time(offset: 0000) as the version", func() {
+			It("reports the current time (offset: 0000) as the version", func() {
 				// An example of response.Version.Time.String() is
 				// 2019-04-03 18:53:10.964705 +0000 UTC
 				contained := strings.Contains(response.Version.Time.String(), "0000")
