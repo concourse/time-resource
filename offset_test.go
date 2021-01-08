@@ -12,38 +12,44 @@ import (
 )
 
 type testEnvironment struct {
-	teamName       string
-	pipelineName   string
-	hashPercentile float64
+	teamName             string
+	pipelineName         string
+	pipelineInstanceVars string
+	hashPercentile       float64
 }
 
 var xsmallOffset = testEnvironment{
-	teamName:       "",
-	pipelineName:   "",
-	hashPercentile: 0.16425462769,
+	teamName:             "a",
+	pipelineName:         "b",
+	pipelineInstanceVars: "",
+	hashPercentile:       0.11040721324049105,
 }
 
 var smallOffset = testEnvironment{
-	teamName:       "concourse",
-	pipelineName:   "time-resource",
-	hashPercentile: 0.49905898922,
+	teamName:             "concourse",
+	pipelineName:         "time-resource",
+	pipelineInstanceVars: "",
+	hashPercentile:       0.4723325777967303,
 }
 
 var largeOffset = testEnvironment{
-	teamName:       "concourse",
-	pipelineName:   "concourse",
-	hashPercentile: 0.6995269071,
+	teamName:             "concourse",
+	pipelineName:         "concourse",
+	pipelineInstanceVars: "large",
+	hashPercentile:       0.8069350870342309,
 }
 
 var xlargeOffset = testEnvironment{
-	teamName:       "foo",
-	pipelineName:   "bar",
-	hashPercentile: 0.77989363246,
+	teamName:             "foo",
+	pipelineName:         "bar",
+	pipelineInstanceVars: "baz",
+	hashPercentile:       0.9322489704778998,
 }
 
 var _ = Describe("Offset", func() {
 	originalTeam := os.Getenv(resource.BUILD_TEAM_NAME)
 	originalPipeline := os.Getenv(resource.BUILD_PIPELINE_NAME)
+	originalPipelineInstanceVars := os.Getenv(resource.BUILD_PIPELINE_INSTANCE_VARS)
 
 	var (
 		env testEnvironment
@@ -68,12 +74,14 @@ var _ = Describe("Offset", func() {
 	JustBeforeEach(func() {
 		os.Setenv(resource.BUILD_TEAM_NAME, env.teamName)
 		os.Setenv(resource.BUILD_PIPELINE_NAME, env.pipelineName)
+		os.Setenv(resource.BUILD_PIPELINE_INSTANCE_VARS, env.pipelineInstanceVars)
 		actualOffsetTime = resource.Offset(tl, reference)
 	})
 
 	AfterEach(func() {
 		os.Setenv(resource.BUILD_TEAM_NAME, originalTeam)
 		os.Setenv(resource.BUILD_PIPELINE_NAME, originalPipeline)
+		os.Setenv(resource.BUILD_PIPELINE_INSTANCE_VARS, originalPipelineInstanceVars)
 	})
 
 	validateExpectedTime := func() {
@@ -135,7 +143,7 @@ var _ = Describe("Offset", func() {
 					})
 
 					for _, testEnv := range []testEnvironment{xsmallOffset, smallOffset, largeOffset, xlargeOffset} {
-						Context("for the "+env.teamName+"/"+env.pipelineName+" pipeline", func() {
+						Context("for the "+env.teamName+"/"+env.pipelineName+"/"+env.pipelineInstanceVars+" pipeline", func() {
 							BeforeEach(func() {
 								env = testEnv
 								expectedOffsetTime = reference.Truncate(time.Minute)
@@ -266,7 +274,7 @@ var _ = Describe("Offset", func() {
 					})
 
 					for _, testEnv := range []testEnvironment{xsmallOffset, smallOffset, largeOffset, xlargeOffset} {
-						Context("for the "+env.teamName+"/"+env.pipelineName+" pipeline", func() {
+						Context("for the "+env.teamName+"/"+env.pipelineName+"/"+env.pipelineInstanceVars+" pipeline", func() {
 							BeforeEach(func() {
 								env = testEnv
 								expectedOffsetTime = reference.Truncate(time.Minute)

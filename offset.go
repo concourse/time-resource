@@ -12,14 +12,19 @@ import (
 
 const BUILD_TEAM_NAME = "BUILD_TEAM_NAME"
 const BUILD_PIPELINE_NAME = "BUILD_PIPELINE_NAME"
-const offsetHashFormat = "%s/%s"
+const BUILD_PIPELINE_INSTANCE_VARS = "BUILD_PIPELINE_INSTANCE_VARS"
 
 const maxHashValue = int64(math.MaxUint32)
 
 var msPerMinute = time.Minute.Milliseconds()
 
 func Offset(tl lord.TimeLord, reference time.Time) time.Time {
-	str := fmt.Sprintf(offsetHashFormat, os.Getenv(BUILD_TEAM_NAME), os.Getenv(BUILD_PIPELINE_NAME))
+	str := fmt.Sprintf(
+		"%s/%s/%s",
+		os.Getenv(BUILD_TEAM_NAME),
+		os.Getenv(BUILD_PIPELINE_NAME),
+		os.Getenv(BUILD_PIPELINE_INSTANCE_VARS),
+	)
 	hasher := fnv.New32a()
 	if _, err := hasher.Write([]byte(str)); err != nil {
 		fmt.Fprintln(os.Stderr, "hash error:", err.Error())
