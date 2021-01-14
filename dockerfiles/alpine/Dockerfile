@@ -1,4 +1,7 @@
-FROM golang:alpine as builder
+ARG base_image=alpine:latest
+ARG builder_image=concourse/golang-builder
+
+FROM ${builder_image} as builder
 WORKDIR /concourse/time-resource
 COPY go.mod .
 COPY go.sum .
@@ -12,7 +15,7 @@ RUN set -e; for pkg in $(go list ./...); do \
 		go test -o "/tests/$(basename $pkg).test" -c $pkg; \
 	done
 
-FROM alpine:edge AS resource
+FROM ${base_image} AS resource
 RUN apk add --update bash tzdata
 COPY --from=builder /assets /opt/resource
 
