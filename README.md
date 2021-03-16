@@ -171,8 +171,8 @@ will stop the build.
 Run the tests with the following commands for both `alpine` and `ubuntu` images:
 
 ```sh
-docker build -t time-resource -f dockerfiles/alpine/Dockerfile .
-docker build -t time-resource -f dockerfiles/ubuntu/Dockerfile .
+docker build -t time-resource --target tests -f dockerfiles/alpine/Dockerfile .
+docker build -t time-resource --target tests -f dockerfiles/ubuntu/Dockerfile .
 ```
 
 ### Contributing
