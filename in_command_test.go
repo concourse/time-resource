@@ -74,6 +74,15 @@ var _ = Describe("In", func() {
 			Expect(requested.Source).To(Equal(source))
 		})
 
+		It("writes the requested version to the destination", func() {
+			input, err := os.ReadFile(filepath.Join(destination, "timestamp"))
+			Expect(err).NotTo(HaveOccurred())
+
+			givenTime, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", string(input))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(givenTime.Unix()).To(Equal(version.Time.Unix()))
+		})
+
 		Context("when the request has no time in its version", func() {
 			BeforeEach(func() {
 				version = models.Version{}
