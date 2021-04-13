@@ -36,6 +36,12 @@ func (*InCommand) Run(destination string, request models.InRequest) (models.InRe
 		versionTime = time.Now()
 	}
 
+	timeFile, err := os.Create(filepath.Join(destination, "timestamp"))
+	if err != nil {
+		return models.InResponse{}, fmt.Errorf("creating input file: %w", err)
+	}
+	timeFile.WriteString(versionTime.Format("2006-01-02 15:04:05.999999999 -0700 MST"))
+
 	inVersion := models.Version{Time: versionTime}
 	response := models.InResponse{Version: inVersion}
 
