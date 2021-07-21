@@ -16,6 +16,7 @@ RUN set -e; for pkg in $(go list ./...); do \
 	done
 
 FROM ${base_image} AS resource
+RUN apk update && apk upgrade
 RUN apk add --update bash tzdata
 COPY --from=builder /assets /opt/resource
 
