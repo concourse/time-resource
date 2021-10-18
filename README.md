@@ -50,6 +50,8 @@ level of precision is better left to other tools.
   stop: 6:00 AM
   ```
 
+  **Note: YAML parsers like PyYAML may parse time values in the 24h format as integers, not strings (e.g. `19:00` is parsed as `1140`). If you pre-process your pipeline configuration with such a parser this might trigger a marshaling error. In that case you can quote your `start` and `stop` values, so they will be correctly treated as string.**
+
 * `days`: *Optional.* Limit the creation of new time versions to the specified
   day(s). Supported days are: `Sunday`, `Monday`, `Tuesday`, `Wednesday`,
   `Thursday`, `Friday` and `Saturday`.
