@@ -1,4 +1,4 @@
-ARG base_image
+ARG base_image=ubuntu:latest
 ARG builder_image=concourse/golang-builder
 
 FROM ${builder_image} AS builder
@@ -12,19 +12,19 @@ RUN go build -o /assets/out github.com/concourse/time-resource/out
 RUN go build -o /assets/in github.com/concourse/time-resource/in
 RUN go build -o /assets/check github.com/concourse/time-resource/check
 RUN set -e; for pkg in $(go list ./...); do \
-		go test -o "/tests/$(basename $pkg).test" -c $pkg; \
+	go test -o "/tests/$(basename $pkg).test" -c $pkg; \
 	done
 
 FROM ${base_image} AS resource
 RUN apt update && apt upgrade -y -o Dpkg::Options::="--force-confdef"
 RUN apt update && apt install -y --no-install-recommends tzdata \
-    && rm -rf /var/lib/apt/lists/*
+	&& rm -rf /var/lib/apt/lists/*
 COPY --from=builder /assets /opt/resource
 
 FROM resource AS tests
 COPY --from=builder /tests /tests
 RUN set -e; for test in /tests/*.test; do \
-		$test; \
+	$test; \
 	done
 
 FROM resource
