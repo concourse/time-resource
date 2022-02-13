@@ -62,8 +62,8 @@ level of precision is better left to other tools.
   days: [Monday, Wednesday]
   ```
 
-These can be combined to emit a new version on an interval during a particular
-time period.
+  These can be combined to emit a new version on an interval during a particular
+  time period.
 
 * `initial_version`: *Optional.* When using `start` and `stop` as a trigger for
   a job, you will be unable to run the job manually until it goes into the
