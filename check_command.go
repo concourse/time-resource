@@ -37,6 +37,9 @@ func (*CheckCommand) Run(request models.CheckRequest) ([]models.Version, error) 
 
 	if !previousTime.IsZero() {
 		versions = append(versions, models.Version{Time: previousTime})
+	} else if request.Source.InitialVersion {
+		versions = append(versions, models.Version{Time: currentTime})
+		return versions, nil
 	}
 
 	if tl.Check(currentTime) {

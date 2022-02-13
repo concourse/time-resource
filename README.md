@@ -65,6 +65,38 @@ level of precision is better left to other tools.
 These can be combined to emit a new version on an interval during a particular
 time period.
 
+* `initial_version`: *Optional.* When using `start` and `stop` as a trigger for
+  a job, you will be unable to run the job manually until it goes into the
+  configured time range for the first time (manual runs will work once the `time`
+  resource has produced it's first version).
+
+  To get around this issue, there are two approaches.
+     * Use `initial_version: true`, which will produce a new version that is
+       set to the current time, if `check` runs and there isn't already a version
+       specified. This has a downside that if used with `trigger: true`, it will
+       kick off the correlating job when the pipeline is first created, even
+       outside of the specified window.
+     * Once you push a pipeline that utilizes `start` and `stop`, run the
+       following fly command to run the resource check from a previous point
+       in time (see [this issue](https://github.com/concourse/time-resource/issues/24#issuecomment-689422764)
+       for 6.x.x+ or [this issue](https://github.com/concourse/time-resource/issues/11#issuecomment-562385742)
+       for older Concourse versions).
+
+       ```
+       fly -t <your target> \
+         check-resource <your resource>
+         --from "time:2000-01-01T00:00:00Z" # the important part
+       ```
+
+       This has the benefit that it shouldn't trigger that initial job run, but
+       will still allow you to manually run the job if needed.
+
+  e.g.
+
+  ```
+  initial_version: true
+  ```
+
 ## Behavior
 
 ### `check`: Produce timestamps satisfying the interval.
