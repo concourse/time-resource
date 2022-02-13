@@ -70,13 +70,13 @@ level of precision is better left to other tools.
   configured time range for the first time (manual runs will work once the `time`
   resource has produced it's first version).
 
-  To get around this issue, there are two approaches.
+  To get around this issue, there are two approaches:
      * Use `initial_version: true`, which will produce a new version that is
        set to the current time, if `check` runs and there isn't already a version
-       specified. This has a downside that if used with `trigger: true`, it will
+       specified. **NOTE: This has a downside that if used with `trigger: true`, it will
        kick off the correlating job when the pipeline is first created, even
-       outside of the specified window.
-     * Once you push a pipeline that utilizes `start` and `stop`, run the
+       outside of the specified window**.
+     * Alternatively, once you push a pipeline that utilizes `start` and `stop`, run the
        following fly command to run the resource check from a previous point
        in time (see [this issue](https://github.com/concourse/time-resource/issues/24#issuecomment-689422764)
        for 6.x.x+ or [this issue](https://github.com/concourse/time-resource/issues/11#issuecomment-562385742)
