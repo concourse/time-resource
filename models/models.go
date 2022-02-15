@@ -39,11 +39,12 @@ type CheckRequest struct {
 type CheckResponse []Version
 
 type Source struct {
-	Interval *Interval  `json:"interval"`
-	Start    *TimeOfDay `json:"start"`
-	Stop     *TimeOfDay `json:"stop"`
-	Days     []Weekday  `json:"days"`
-	Location *Location  `json:"location"`
+	InitialVersion bool       `json:"initial_version"`
+	Interval       *Interval  `json:"interval"`
+	Start          *TimeOfDay `json:"start"`
+	Stop           *TimeOfDay `json:"stop"`
+	Days           []Weekday  `json:"days"`
+	Location       *Location  `json:"location"`
 }
 
 func (source Source) Validate() error {
