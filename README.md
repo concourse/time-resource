@@ -84,7 +84,7 @@ level of precision is better left to other tools.
 
        ```
        fly -t <your target> \
-         check-resource <your resource>
+         check-resource --resource <pipeline>/<your resource>
          --from "time:2000-01-01T00:00:00Z" # the important part
        ```
 
