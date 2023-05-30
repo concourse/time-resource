@@ -206,7 +206,7 @@ will stop the build.
 Run the tests with the following command:
 
 ```sh
-docker build -t time-resource --target tests --build-arg base_image=paketobuildpacks/run-jammy-static:latest .
+docker build -t time-resource --target tests --build-arg base_image=concourse/resource-types-base-image-static:latest .
 ```
 
 ### Contributing

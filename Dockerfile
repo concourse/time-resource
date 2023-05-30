@@ -1,8 +1,6 @@
 ARG base_image=ubuntu:latest
 ARG builder_image=concourse/golang-builder
 
-FROM busybox:uclibc as busybox
-
 FROM ${builder_image} AS builder
 WORKDIR /concourse/time-resource
 COPY go.mod .
@@ -20,8 +18,6 @@ RUN set -e; for pkg in $(go list ./...); do \
 FROM ${base_image} AS resource
 USER root
 COPY --from=builder /assets /opt/resource
-COPY --from=busybox /bin/sh /bin/sh
-COPY --from=busybox /bin/cp /bin/cp
 
 FROM resource AS tests
 COPY --from=builder /tests /tests
