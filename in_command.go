@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/concourse/time-resource/models"
@@ -38,9 +39,15 @@ func (*InCommand) Run(destination string, request models.InRequest) (models.InRe
 
 	timeFile, err := os.Create(filepath.Join(destination, "timestamp"))
 	if err != nil {
-		return models.InResponse{}, fmt.Errorf("creating input file: %w", err)
+		return models.InResponse{}, fmt.Errorf("creating timestamp file: %w", err)
 	}
 	timeFile.WriteString(versionTime.Format("2006-01-02 15:04:05.999999999 -0700 MST"))
+
+	epochFile, err := os.Create(filepath.Join(destination, "epoch"))
+	if err != nil {
+		return models.InResponse{}, fmt.Errorf("creating epoch file: %w", err)
+	}
+	epochFile.WriteString(strconv.FormatInt(versionTime.Unix(), 10))
 
 	inVersion := models.Version{Time: versionTime}
 	response := models.InResponse{Version: inVersion}
