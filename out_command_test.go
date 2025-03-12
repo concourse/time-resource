@@ -1,14 +1,13 @@
 package resource_test
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 	"time"
 
 	resource "github.com/concourse/time-resource"
 	"github.com/concourse/time-resource/models"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -27,7 +26,7 @@ var _ = Describe("Out", func() {
 	BeforeEach(func() {
 		now = time.Now().UTC()
 
-		tmpdir, err = ioutil.TempDir("", "out-source")
+		tmpdir, err = os.MkdirTemp("", "out-source")
 		Expect(err).NotTo(HaveOccurred())
 
 		source = models.Source{}

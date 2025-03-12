@@ -48,12 +48,19 @@ type Source struct {
 }
 
 func (source Source) Validate() error {
-	if source.Start != nil && source.Stop == nil {
-		return errors.New("must configure 'stop' if 'start' is set")
+	// Validate start and stop are both set or both unset
+	if (source.Start != nil) != (source.Stop != nil) {
+		if source.Start != nil {
+			return errors.New("must configure 'stop' if 'start' is set")
+		}
+		return errors.New("must configure 'start' if 'stop' is set")
 	}
 
-	if source.Start == nil && source.Stop != nil {
-		return errors.New("must configure 'start' if 'stop' is set")
+	// Validate days if specified
+	for _, day := range source.Days {
+		if day < 0 || day > 6 {
+			return fmt.Errorf("invalid day: %v", day)
+		}
 	}
 
 	return nil
@@ -174,28 +181,25 @@ func (tod TimeOfDay) String() string {
 
 type Weekday time.Weekday
 
-func ParseWeekday(wdStr string) (Weekday, error) {
-	var wd time.Weekday
-	switch wdStr {
-	case "Sunday":
-		wd = time.Sunday
-	case "Monday":
-		wd = time.Monday
-	case "Tuesday":
-		wd = time.Tuesday
-	case "Wednesday":
-		wd = time.Wednesday
-	case "Thursday":
-		wd = time.Thursday
-	case "Friday":
-		wd = time.Friday
-	case "Saturday":
-		wd = time.Saturday
-	default:
-		return 0, fmt.Errorf("unknown weekday: %s", wdStr)
+func ParseWeekday(wdStr string) (time.Weekday, error) {
+	switch strings.ToLower(wdStr) {
+	case "sun", "sunday":
+		return time.Sunday, nil
+	case "mon", "monday":
+		return time.Monday, nil
+	case "tue", "tuesday":
+		return time.Tuesday, nil
+	case "wed", "wednesday":
+		return time.Wednesday, nil
+	case "thu", "thursday":
+		return time.Thursday, nil
+	case "fri", "friday":
+		return time.Friday, nil
+	case "sat", "saturday":
+		return time.Saturday, nil
 	}
 
-	return Weekday(wd), nil
+	return 0, fmt.Errorf("unknown weekday: %s", wdStr)
 }
 
 func (x *Weekday) UnmarshalJSON(payload []byte) error {
@@ -210,7 +214,7 @@ func (x *Weekday) UnmarshalJSON(payload []byte) error {
 		return err
 	}
 
-	*x = wd
+	*x = Weekday(wd)
 
 	return nil
 }

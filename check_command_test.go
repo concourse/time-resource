@@ -3,11 +3,11 @@ package resource_test
 import (
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	resource "github.com/concourse/time-resource"
 	"github.com/concourse/time-resource/models"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Check", func() {
