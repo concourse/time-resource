@@ -3,9 +3,8 @@ package lord_test
 import (
 	"time"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/onsi/ginkgo/extensions/table"
 
 	"github.com/concourse/time-resource/lord"
 	"github.com/concourse/time-resource/models"

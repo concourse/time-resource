@@ -2,7 +2,6 @@ package resource_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -10,7 +9,7 @@ import (
 
 	resource "github.com/concourse/time-resource"
 	"github.com/concourse/time-resource/models"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -27,7 +26,7 @@ var _ = Describe("In", func() {
 	)
 
 	BeforeEach(func() {
-		tmpdir, err = ioutil.TempDir("", "in-destination")
+		tmpdir, err = os.MkdirTemp("", "in-destination")
 		Expect(err).NotTo(HaveOccurred())
 
 		destination = path.Join(tmpdir, "in-dir")

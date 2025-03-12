@@ -46,8 +46,33 @@ func Offset(tl lord.TimeLord, reference time.Time) time.Time {
 		return start
 	}
 
-	hashPerMinute := maxHashValue / (rangeDuration.Milliseconds() / msPerMinute)
-	offsetDuration := time.Duration(hash/hashPerMinute) * time.Minute
+	rangeMs := rangeDuration.Milliseconds()
+	if rangeMs <= 0 {
+		return start
+	}
 
+	minutesInRange := rangeMs / msPerMinute
+	if minutesInRange <= 0 {
+		minutesInRange = 1
+	}
+
+	hashPerMinute := maxHashValue / minutesInRange
+	if hashPerMinute <= 0 {
+		hashPerMinute = 1
+	}
+
+	minutesToOffset := hash / hashPerMinute
+
+	// Guard against overflows
+	if minutesToOffset < 0 {
+		minutesToOffset = 0
+	}
+
+	// Ensure the offset doesn't exceed the range duration
+	if minutesToOffset > minutesInRange {
+		minutesToOffset = minutesInRange
+	}
+
+	offsetDuration := time.Duration(minutesToOffset) * time.Minute
 	return start.Add(offsetDuration)
 }

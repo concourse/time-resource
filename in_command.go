@@ -23,7 +23,6 @@ func (*InCommand) Run(destination string, request models.InRequest) (models.InRe
 	if err != nil {
 		return models.InResponse{}, fmt.Errorf("creating input file: %w", err)
 	}
-
 	defer file.Close()
 
 	err = json.NewEncoder(file).Encode(request)
@@ -38,9 +37,14 @@ func (*InCommand) Run(destination string, request models.InRequest) (models.InRe
 
 	timeFile, err := os.Create(filepath.Join(destination, "timestamp"))
 	if err != nil {
-		return models.InResponse{}, fmt.Errorf("creating input file: %w", err)
+		return models.InResponse{}, fmt.Errorf("creating timestamp file: %w", err)
 	}
-	timeFile.WriteString(versionTime.Format("2006-01-02 15:04:05.999999999 -0700 MST"))
+	defer timeFile.Close()
+
+	_, err = timeFile.WriteString(versionTime.Format("2006-01-02 15:04:05.999999999 -0700 MST"))
+	if err != nil {
+		return models.InResponse{}, fmt.Errorf("writing timestamp file: %w", err)
+	}
 
 	inVersion := models.Version{Time: versionTime}
 	response := models.InResponse{Version: inVersion}

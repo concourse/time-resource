@@ -33,7 +33,7 @@ func (*CheckCommand) Run(request models.CheckRequest) ([]models.Version, error) 
 		Days:         request.Source.Days,
 	}
 
-	versions := []models.Version{}
+	var versions []models.Version
 
 	if !previousTime.IsZero() {
 		versions = append(versions, models.Version{Time: previousTime})
