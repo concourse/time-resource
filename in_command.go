@@ -51,7 +51,11 @@ func (*InCommand) Run(destination string, request models.InRequest) (models.InRe
 	if err != nil {
 		return models.InResponse{}, fmt.Errorf("creating epoch file: %w", err)
 	}
-	epochFile.WriteString(strconv.FormatInt(versionTime.Unix(), 10))
+	defer epochFile.Close()
+	_, err = epochFile.WriteString(strconv.FormatInt(versionTime.Unix(), 10))
+	if err != nil {
+		return models.InResponse{}, fmt.Errorf("writing epoch file: %w", err)
+	}
 
 	inVersion := models.Version{Time: versionTime}
 	response := models.InResponse{Version: inVersion}
