@@ -108,7 +108,7 @@ given version, or if there is no version given.
 
 ### `in`: Report the given time.
 
-Fetches the given timestamp. Creates two files:
+Fetches the given timestamp. Creates three files:
 1. `input` which contains the request provided by Concourse
 1. `timestamp` which contains the fetched version in the following format: `2006-01-02 15:04:05.999999999 -0700 MST`
 1. `epoch` which contains the fetched version as a Unix epoch Timestamp (integer only)
