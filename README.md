@@ -10,8 +10,9 @@ level of precision is better left to other tools.
 ## Source Configuration
 
 * `interval`: *Optional.* The interval on which to report new versions. Valid
-  examples: `60s`, `90m`, `1h`. If not specified, this resource will generate
-  exactly 1 new version per calendar day on each of the valid `days`.
+  units are: “ns”, “us” (or “µs”), “ms”, “s”, “m”, “h”. Examples: `60s`, `90m`,
+  `1h30m`. If not specified, this resource will generate exactly 1 new version
+  per calendar day on each of the valid `days`.
 
 * `location`: *Optional. Default `UTC`.* The
   [location](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) in
