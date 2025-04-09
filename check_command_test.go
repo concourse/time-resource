@@ -514,6 +514,103 @@ var _ = Describe("Check", func() {
 				})
 			})
 		})
+
+		Context("when start_after is specified", func() {
+			Context("when no version is provided", func() {
+				Context("and the current time is after start_after", func() {
+					BeforeEach(func() {
+						startAfter := now.Add(-1 * time.Hour)
+						source.StartAfter = (*models.StartAfter)(&startAfter)
+					})
+
+					It("outputs a version containing the current time", func() {
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", now.Unix(), 1))
+					})
+				})
+
+				Context("and the current time is before start_after", func() {
+					BeforeEach(func() {
+						startAfter := now.Add(1 * time.Hour)
+						source.StartAfter = (*models.StartAfter)(&startAfter)
+					})
+
+					It("does not output any versions", func() {
+						Expect(response).To(BeEmpty())
+					})
+				})
+			})
+
+			Context("when a version is provided", func() {
+				var previousTime time.Time
+
+				Context("when the current time is after start_after and a previous version exists", func() {
+					BeforeEach(func() {
+						previousTime = now.Add(-24 * time.Hour)
+						version.Time = previousTime
+						startAfter := now.Add(-25 * time.Hour)
+						source.StartAfter = (*models.StartAfter)(&startAfter)
+					})
+
+					It("outputs both the previous and current versions", func() {
+						Expect(response).To(HaveLen(2))
+						Expect(response[0].Time.Unix()).To(Equal(previousTime.Unix()))
+						Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+					})
+				})
+
+				Context("when the current time is before start_after and InitialVersion is true", func() {
+					BeforeEach(func() {
+						startAfter := now.Add(1 * time.Hour)
+						source.StartAfter = (*models.StartAfter)(&startAfter)
+						source.InitialVersion = true
+					})
+
+					It("outputs a single version containing the initial version", func() {
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", now.Unix(), 1))
+					})
+				})
+
+				Context("when the current time is after start_after and InitialVersion is true", func() {
+					BeforeEach(func() {
+						startAfter := now.Add(-1 * time.Hour)
+						source.StartAfter = (*models.StartAfter)(&startAfter)
+						source.InitialVersion = true
+					})
+
+					It("outputs a single version containing the current time", func() {
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", now.Unix(), 1))
+					})
+				})
+
+				Context("when the current time is before start_after and InitialVersion is false", func() {
+					BeforeEach(func() {
+						startAfter := now.Add(1 * time.Hour)
+						source.StartAfter = (*models.StartAfter)(&startAfter)
+						source.InitialVersion = false
+					})
+
+					It("does not output any versions", func() {
+						Expect(response).To(BeEmpty())
+					})
+				})
+
+				Context("when the current time is after start_after and InitialVersion is false", func() {
+					BeforeEach(func() {
+						startAfter := now.Add(-1 * time.Hour)
+						source.StartAfter = (*models.StartAfter)(&startAfter)
+						source.InitialVersion = false
+					})
+
+					It("outputs a single version containing the current time", func() {
+						Expect(response).To(HaveLen(1))
+						Expect(response[0].Time.Unix()).To(BeNumerically("~", now.Unix(), 1))
+					})
+				})
+			})
+		})
 	})
 })
 
