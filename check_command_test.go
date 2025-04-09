@@ -558,8 +558,10 @@ var _ = Describe("Check", func() {
 						Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
 					})
 				})
+			})
 
-				Context("when the current time is before start_after and InitialVersion is true", func() {
+			Context("when initial_version is specified", func() {
+				Context("when the current time is before start_after and initial_version is true", func() {
 					BeforeEach(func() {
 						startAfter := now.Add(1 * time.Hour)
 						source.StartAfter = (*models.StartAfter)(&startAfter)
@@ -572,7 +574,7 @@ var _ = Describe("Check", func() {
 					})
 				})
 
-				Context("when the current time is after start_after and InitialVersion is true", func() {
+				Context("when the current time is after start_after and initial_version is true", func() {
 					BeforeEach(func() {
 						startAfter := now.Add(-1 * time.Hour)
 						source.StartAfter = (*models.StartAfter)(&startAfter)
@@ -585,7 +587,7 @@ var _ = Describe("Check", func() {
 					})
 				})
 
-				Context("when the current time is before start_after and InitialVersion is false", func() {
+				Context("when the current time is before start_after and initial_version is false", func() {
 					BeforeEach(func() {
 						startAfter := now.Add(1 * time.Hour)
 						source.StartAfter = (*models.StartAfter)(&startAfter)
@@ -597,7 +599,7 @@ var _ = Describe("Check", func() {
 					})
 				})
 
-				Context("when the current time is after start_after and InitialVersion is false", func() {
+				Context("when the current time is after start_after and initial_version is false", func() {
 					BeforeEach(func() {
 						startAfter := now.Add(-1 * time.Hour)
 						source.StartAfter = (*models.StartAfter)(&startAfter)

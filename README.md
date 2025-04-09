@@ -97,7 +97,21 @@ level of precision is better left to other tools.
   ```
   initial_version: true
   ```
+* `start_after`: *Optional.* Specifies the earliest datetime from which new time-based versions can be created.  
 
+  Supported formats are `2006-01-02 15:04:05`, `2006-01-02T15:04:05`, `2006-01-02T15:04`, `2006-01-02T15`, `2006-01-02`.
+
+  Behavior:
+  - If the `start_after` datetime is specified and is in the future, it will determine when the first version is created.
+  - If the `start_after` datetime is in the past, the resource will continue to generate versions based on the other configuration parameters.
+  - When `initial_version` is set to true, the first version will be created based on the current time. Subsequent versions will only be generated if they fall after the `start_after` datetime.
+  - If a `location` is provided, the `start_after` datetime will be interpreted in the context of the specified timezone, rather than in UTC.
+
+  e.g.
+
+  ```
+  start_after: 2023-10-01T00:00:00
+  ```
 ## Behavior
 
 ### `check`: Produce timestamps satisfying the interval.
@@ -185,6 +199,25 @@ jobs:
   - get: 5m-during-midnight-hour
     trigger: true
   - task: something
+    config: # ...
+```
+
+### Trigger on/after specific datetime set
+
+```yaml
+resources:
+- name: time-based-resource
+  type: time
+  source:
+    start_after: 2023-12-01T09:00:00
+    location: America/New_York
+
+jobs:
+- name: process-time-based-resource
+  plan:
+  - get: time-based-resource
+    trigger: true
+  - task: process-data
     config: # ...
 ```
 
