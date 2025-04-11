@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/adhocore/gronx"
 )
 
 type Version struct {
@@ -44,10 +46,18 @@ type Source struct {
 	Start          *TimeOfDay `json:"start"`
 	Stop           *TimeOfDay `json:"stop"`
 	Days           []Weekday  `json:"days"`
+	Cron           *Cron      `json:"cron"`
 	Location       *Location  `json:"location"`
 }
 
 func (source Source) Validate() error {
+	// Validate interval/start/stop/days and cron are not specified together
+	if source.Cron != nil {
+		if source.Interval != nil || source.Start != nil || source.Stop != nil || len(source.Days) > 0 {
+			return errors.New("cannot configure 'interval' or 'start'/'stop' or 'days' with 'cron'")
+		}
+	}
+
 	// Validate start and stop are both set or both unset
 	if (source.Start != nil) != (source.Stop != nil) {
 		if source.Start != nil {
@@ -60,6 +70,13 @@ func (source Source) Validate() error {
 	for _, day := range source.Days {
 		if day < 0 || day > 6 {
 			return fmt.Errorf("invalid day: %v", day)
+		}
+	}
+
+	// Validate cron expression if provided
+	if source.Cron != nil {
+		if err := source.Cron.Validate(); err != nil {
+			return fmt.Errorf("invalid cron expression: %v", err)
 		}
 	}
 
@@ -149,7 +166,7 @@ func (tod *TimeOfDay) UnmarshalJSON(payload []byte) error {
 
 	var t time.Time
 	for _, format := range timeFormats {
-		t, err = time.Parse(format, timeStr)
+		t, err = time.Parse(format, strings.ToUpper(timeStr))
 		if err == nil {
 			break
 		}
@@ -221,4 +238,106 @@ func (x *Weekday) UnmarshalJSON(payload []byte) error {
 
 func (wd Weekday) MarshalJSON() ([]byte, error) {
 	return json.Marshal(time.Weekday(wd).String())
+}
+
+type Cron struct {
+	Expression string
+}
+
+func (c *Cron) UnmarshalJSON(payload []byte) error {
+	var cronStr string
+	err := json.Unmarshal(payload, &cronStr)
+	if err != nil {
+		return err
+	}
+
+	g := gronx.New()
+	if !g.IsValid(cronStr) {
+		return fmt.Errorf("invalid cron expression: %s", cronStr)
+	}
+
+	c.Expression = cronStr
+	return nil
+}
+
+func (c Cron) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.Expression)
+}
+
+func (c Cron) Validate() error {
+	g := gronx.New()
+	if !g.IsValid(c.Expression) {
+		return fmt.Errorf("invalid cron expression: %s", c.Expression)
+	}
+
+	// Check if the cron expression would run too frequently (less than 60 seconds)
+	if err := c.validateMinimumInterval(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateMinimumInterval ensures no specific seconds are specified (to always run on minute boundaries)
+func (c Cron) validateMinimumInterval() error {
+	if strings.HasPrefix(c.Expression, "@") {
+		if c.Expression == "@everysecond" {
+			return errors.New("@everysecond is not supported: cron expressions must not specify seconds")
+		}
+
+		// Unknown macro - let it pass if gronx accepted it, assuming it doesn't operate at the second level
+		return nil
+	}
+
+	// Check if the expression is a 6-field cron format (includes seconds)
+	fields := strings.Fields(c.Expression)
+
+	// If there are 6 fields, it's a cron expression with seconds, which we want to disallow
+	if len(fields) == 6 {
+		return errors.New("cron expressions with seconds field are not supported: use 5-field format")
+	}
+
+	return nil
+}
+
+// parsePositiveInt parses a string to an integer and ensures it's positive
+func parsePositiveInt(s string) (int, error) {
+	var value int
+	_, err := fmt.Sscanf(s, "%d", &value)
+	if err != nil {
+		return 0, err
+	}
+
+	if value <= 0 {
+		return 0, errors.New("value must be positive")
+	}
+
+	return value, nil
+}
+
+func (c *Cron) Next(t time.Time) (time.Time, error) {
+	return gronx.NextTickAfter(c.Expression, t, false)
+}
+
+// NextIncludingCurrent returns the next time including the reference time if it matches
+func (c *Cron) NextIncludingCurrent(t time.Time) (time.Time, error) {
+	return gronx.NextTickAfter(c.Expression, t, true)
+}
+
+// NextN returns all next cron times between after and before
+func (c *Cron) NextN(after time.Time, before time.Time, n int) []time.Time {
+	var times []time.Time
+	next, err := c.Next(after)
+	if err != nil {
+		return nil
+	}
+
+	for len(times) < n && next.Before(before) {
+		times = append(times, next)
+		next, err = c.Next(next)
+		if err != nil {
+			break
+		}
+	}
+	return times
 }

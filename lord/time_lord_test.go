@@ -27,6 +27,8 @@ type testCase struct {
 
 	days []time.Weekday
 
+	cron string
+
 	prev    string
 	prevDay time.Weekday
 
@@ -84,6 +86,14 @@ func (tc testCase) Run() {
 		tl.Interval = (*models.Interval)(&interval)
 	}
 
+	if tc.cron != "" {
+		cronExpr := models.Cron{Expression: tc.cron}
+		err := cronExpr.Validate()
+		Expect(err).NotTo(HaveOccurred())
+
+		tl.Cron = &cronExpr
+	}
+
 	tl.Days = make([]models.Weekday, len(tc.days))
 	for i, d := range tc.days {
 		tl.Days[i] = models.Weekday(d)
@@ -95,6 +105,9 @@ func (tc testCase) Run() {
 	for now.Weekday() != tc.nowDay {
 		now = now.AddDate(0, 0, 1)
 	}
+
+	// Add any extra time if specified
+	now = now.Add(tc.extraTime)
 
 	if tc.prev != "" {
 		tc.prev += " 2018"
@@ -129,7 +142,7 @@ func (tc testCase) Run() {
 		expected := tc.list[idx]
 		Expect(actual.Hour()).To(Equal(expected.hour))
 		Expect(actual.Minute()).To(Equal(expected.minute))
-		Expect(latest.Second()).To(Equal(0))
+		Expect(actual.Second()).To(Equal(0))
 		Expect(actual.Weekday()).To(Equal(expected.weekday))
 	}
 }
@@ -454,5 +467,109 @@ var _ = DescribeTable("A range with an interval and a previous time", (testCase)
 
 		result: false,
 		latest: expectedTime{hour: 14, minute: 58},
+	}),
+)
+
+var _ = DescribeTable("A cron expression without a previous time", (testCase).Run,
+	Entry("exactly at the cron time (minute)", testCase{
+		cron:   "30 * * * *", // Every hour at 30 minutes
+		now:    "1:30 PM +0000",
+		nowDay: time.Monday,
+		result: true,
+		latest: expectedTime{hour: 13, minute: 30, weekday: time.Monday},
+	}),
+	Entry("not at the cron time", testCase{
+		cron:   "30 * * * *", // Every hour at 30 minutes
+		now:    "1:29 PM +0000",
+		nowDay: time.Monday,
+		result: false,
+		latest: expectedTime{isZero: true},
+	}),
+	Entry("at a specific hour and minute", testCase{
+		cron:   "15 9 * * *", // Every day at 9:15
+		now:    "9:15 AM +0000",
+		nowDay: time.Tuesday,
+		result: true,
+		latest: expectedTime{hour: 9, minute: 15, weekday: time.Tuesday},
+	}),
+	Entry("at a specific hour and minute on specific days", testCase{
+		cron:   "15 9 * * 1-5", // Every weekday at 9:15
+		now:    "9:15 AM +0000",
+		nowDay: time.Wednesday,
+		result: true,
+		latest: expectedTime{hour: 9, minute: 15, weekday: time.Wednesday},
+	}),
+	Entry("at a specific hour and minute but not on specified days", testCase{
+		cron:   "15 9 * * 1-5", // Every weekday at 9:15
+		now:    "9:15 AM +0000",
+		nowDay: time.Sunday,
+		result: false,
+		latest: expectedTime{isZero: true},
+	}),
+)
+
+var _ = DescribeTable("A cron expression with a timezone", (testCase).Run,
+	Entry("at the cron time with fixed offset", testCase{
+		cron:     "0 9 * * *", // Every day at 9am
+		location: "Etc/GMT+5",
+		now:      "2:00 PM +0000", // 9am UTC-5
+		nowDay:   time.Thursday,
+		result:   true,
+		latest:   expectedTime{hour: 14, minute: 0, weekday: time.Thursday},
+	}),
+)
+
+var _ = DescribeTable("A cron expression with complex patterns", (testCase).Run,
+	Entry("with range of hours", testCase{
+		cron:   "0 9-17 * * *", // Every hour from 9am to 5pm
+		now:    "2:00 PM +0000",
+		nowDay: time.Thursday,
+		result: true,
+		latest: expectedTime{hour: 14, minute: 0, weekday: time.Thursday},
+	}),
+	Entry("with step values", testCase{
+		cron:   "0 */2 * * *", // Every even hour
+		now:    "2:00 PM +0000",
+		nowDay: time.Thursday,
+		result: true,
+		latest: expectedTime{hour: 14, minute: 0, weekday: time.Thursday},
+	}),
+	Entry("with step values not matching", testCase{
+		cron:   "0 */2 * * *", // Every even hour
+		now:    "3:00 PM +0000",
+		nowDay: time.Thursday,
+		result: false,
+		latest: expectedTime{isZero: true},
+	}),
+)
+
+var _ = DescribeTable("A cron expression with edge cases", (testCase).Run,
+	Entry("at midnight", testCase{
+		cron:   "0 0 * * *", // Every day at midnight
+		now:    "12:00 AM +0000",
+		nowDay: time.Friday,
+		result: true,
+		latest: expectedTime{hour: 0, minute: 0, weekday: time.Friday},
+	}),
+	Entry("with last day of week", testCase{
+		cron:   "0 12 * * 6", // Noon every Saturday
+		now:    "12:00 PM +0000",
+		nowDay: time.Saturday,
+		result: true,
+		latest: expectedTime{hour: 12, minute: 0, weekday: time.Saturday},
+	}),
+	Entry("with last minute of hour", testCase{
+		cron:   "59 * * * *", // Every hour at 59 minutes
+		now:    "1:59 PM +0000",
+		nowDay: time.Monday,
+		result: true,
+		latest: expectedTime{hour: 13, minute: 59, weekday: time.Monday},
+	}),
+	Entry("with name of weekday", testCase{
+		cron:   "0 12 * * MON", // Noon every Monday
+		now:    "12:00 PM +0000",
+		nowDay: time.Monday,
+		result: true,
+		latest: expectedTime{hour: 12, minute: 0, weekday: time.Monday},
 	}),
 )

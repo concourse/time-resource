@@ -3,6 +3,7 @@ package lord
 import (
 	"time"
 
+	"github.com/adhocore/gronx"
 	"github.com/concourse/time-resource/models"
 )
 
@@ -15,9 +16,29 @@ type TimeLord struct {
 	Stop         *models.TimeOfDay
 	Interval     *models.Interval
 	Days         []models.Weekday
+	Cron         *models.Cron
 }
 
 func (tl TimeLord) Check(now time.Time) bool {
+	if tl.Cron != nil {
+		nowInLoc := now.In(tl.loc())
+
+		if tl.PreviousTime.IsZero() {
+			// Evaluate if current time matches the cron expression
+			g := gronx.New()
+			due, err := g.IsDue(tl.Cron.Expression, nowInLoc)
+			return err == nil && due
+		}
+
+		// For cron expressions with previous time
+		prevInLoc := tl.PreviousTime.In(tl.loc())
+		nextTime, err := tl.Cron.Next(prevInLoc)
+		if err != nil {
+			return false
+		}
+
+		return !nextTime.IsZero() && nextTime.After(prevInLoc) && !nextTime.After(nowInLoc)
+	}
 
 	start, stop := tl.LatestRangeBefore(now)
 
@@ -34,17 +55,43 @@ func (tl TimeLord) Check(now time.Time) bool {
 	}
 
 	if tl.Interval != nil {
-		if now.Sub(tl.PreviousTime) >= time.Duration(*tl.Interval) {
-			return true
-		}
-	} else if !start.IsZero() {
-		return tl.PreviousTime.Before(start)
+		return now.Sub(tl.PreviousTime) >= time.Duration(*tl.Interval)
 	}
 
-	return false
+	return !start.IsZero() && tl.PreviousTime.Before(start)
 }
 
 func (tl TimeLord) Latest(reference time.Time) time.Time {
+	if tl.Cron != nil {
+		refInLoc := reference.In(tl.loc())
+
+		// Check if current time matches cron
+		g := gronx.New()
+		due, _ := g.IsDue(tl.Cron.Expression, refInLoc)
+
+		// If no previous time and doesn't match cron
+		if tl.PreviousTime.IsZero() {
+			if due {
+				return refInLoc.UTC() // Current time matches, return it
+			}
+			return time.Time{} // No match, return zero time
+		}
+
+		// Get next occurrence after previous time
+		startTime := tl.PreviousTime.In(tl.loc())
+		next, err := tl.Cron.Next(startTime)
+		if err != nil {
+			return time.Time{}
+		}
+
+		// Check if next time is valid
+		if !next.IsZero() && !next.After(refInLoc) {
+			return next.UTC()
+		}
+
+		return time.Time{}
+	}
+
 	if tl.PreviousTime.After(reference) {
 		return time.Time{}
 	}
@@ -77,10 +124,40 @@ func (tl TimeLord) Latest(reference time.Time) time.Time {
 }
 
 func (tl TimeLord) List(reference time.Time) []time.Time {
+	if tl.Cron != nil {
+		refInLoc := reference.In(tl.loc())
+
+		g := gronx.New()
+		due, _ := g.IsDue(tl.Cron.Expression, refInLoc)
+
+		// Handle no previous time
+		if tl.PreviousTime.IsZero() {
+			if due {
+				return []time.Time{refInLoc.UTC()}
+			}
+			return []time.Time{}
+		}
+
+		// Get previous time in local timezone
+		start := tl.PreviousTime.In(tl.loc())
+
+		// Get all occurrences between previous and reference
+		maxOccurrences := 5
+		times := tl.Cron.NextN(start, refInLoc, maxOccurrences)
+
+		// Convert all times back to UTC
+		result := make([]time.Time, len(times))
+		for i, t := range times {
+			result[i] = t.UTC()
+		}
+
+		return result
+	}
+
 	start := tl.PreviousTime
+	versions := []time.Time{}
 
 	var addForRange func(time.Time, time.Time)
-	versions := []time.Time{}
 
 	if tl.Interval == nil {
 

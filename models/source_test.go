@@ -73,4 +73,260 @@ var _ = Describe("Source", func() {
 			Expect(source.Stop.Hour()).To(Equal(source.Start.Hour() + 12))
 		})
 	})
+
+	Context("when using cron expressions", func() {
+		Context("with both interval and cron specified", func() {
+			BeforeEach(func() {
+				config = `{ "interval": "1h", "cron": "*/5 * * * *" }`
+			})
+
+			It("generates a validation error", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("cannot configure 'interval' or 'start'/'stop' or 'days' with 'cron'"))
+			})
+		})
+
+		Context("with both interval and days and cron specified", func() {
+			BeforeEach(func() {
+				config = `{ "interval": "1h", "days": ["Monday"], "cron": "*/5 * * * *" }`
+			})
+
+			It("generates a validation error", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("cannot configure 'interval' or 'start'/'stop' or 'days' with 'cron'"))
+			})
+		})
+
+		Context("with both interval and start/stop and cron specified", func() {
+			BeforeEach(func() {
+				config = `{ "interval": "1h", "start": "6AM", "stop": "7am", "cron": "*/5 * * * *" }`
+			})
+
+			It("generates a validation error", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("cannot configure 'interval' or 'start'/'stop' or 'days' with 'cron'"))
+			})
+		})
+
+		Context("with an invalid cron expression", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "invalid expression" }`
+			})
+
+			It("generates a validation error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("invalid cron expression"))
+			})
+		})
+
+		Context("with a cron expression that runs every second (6-field)", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "* * * * * *" }`
+			})
+
+			It("generates a validation error for having seconds field", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("cron expressions with seconds field are not supported"))
+			})
+		})
+
+		Context("with a cron expression that runs every 10 seconds", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "*/10 * * * * *" }`
+			})
+
+			It("generates a validation error for having seconds field", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("cron expressions with seconds field are not supported"))
+			})
+		})
+
+		Context("with a cron expression that runs every 30 seconds", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "*/30 * * * * *" }`
+			})
+
+			It("generates a validation error for having seconds field", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("cron expressions with seconds field are not supported"))
+			})
+		})
+
+		Context("with a cron expression that runs at specific seconds", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "0,15,30,45 * * * * *" }`
+			})
+
+			It("generates a validation error for having seconds field", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("cron expressions with seconds field are not supported"))
+			})
+		})
+
+		Context("with a cron expression using a seconds range", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "0-30 * * * * *" }`
+			})
+
+			It("generates a validation error for having seconds field", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("cron expressions with seconds field are not supported"))
+			})
+		})
+
+		Context("with a cron expression that runs exactly every minute (5-field)", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "* * * * *" }`
+			})
+
+			It("is valid (minimum acceptable frequency)", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("with a cron expression that runs every 5 minutes", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "*/5 * * * *" }`
+			})
+
+			It("is valid", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("with a cron expression that runs hourly", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "0 * * * *" }`
+			})
+
+			It("is valid", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("with a cron expression that runs every 2 hours", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "0 */2 * * *" }`
+			})
+
+			It("is valid", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("with a cron expression that runs daily", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "0 0 * * *" }`
+			})
+
+			It("is valid", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("with a cron expression that runs weekly", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "@weekly" }`
+			})
+
+			It("is valid", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+
+		Context("with a cron expression using seconds field but running only once per minute", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "0 * * * * *" }`
+			})
+
+			It("generates a validation error for having seconds field", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("cron expressions with seconds field are not supported"))
+			})
+		})
+
+		Context("with a cron expression that runs exactly every 60 seconds", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "*/60 * * * * *" }`
+			})
+
+			It("generates a validation error for having seconds field", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("cron expressions with seconds field are not supported"))
+			})
+		})
+
+		Context("with a cron expression that runs every 90 seconds", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "*/90 * * * * *" }`
+			})
+
+			It("generates a validation error for having seconds field", func() {
+				Expect(err).ToNot(HaveOccurred())
+
+				err = source.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("cron expressions with seconds field are not supported"))
+			})
+		})
+
+		Context("with a cron expression with an invalid step value in seconds", func() {
+			BeforeEach(func() {
+				config = `{ "cron": "*/abc * * * * *" }`
+			})
+
+			It("is caught during initial cron validation", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("invalid cron expression"))
+			})
+		})
+	})
 })

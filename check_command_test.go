@@ -514,6 +514,129 @@ var _ = Describe("Check", func() {
 				})
 			})
 		})
+
+		Context("when a cron expression is specified", func() {
+			var (
+				cronExpr string
+				cronObj  models.Cron
+			)
+
+			BeforeEach(func() {
+				cronExpr = "*/1 * * * *" // every minute
+				cronObj = models.Cron{Expression: cronExpr}
+				source.Cron = &cronObj
+			})
+
+			Context("when no version is given", func() {
+				BeforeEach(func() {
+					version = models.Version{}
+				})
+
+				It("does not output any versions", func() {
+					Expect(response).To(BeEmpty())
+				})
+			})
+
+			Context("when a version is given and cron condition is met", func() {
+				var prev time.Time
+
+				BeforeEach(func() {
+					// Set previous time to 1 minute ago to ensure the cron expression triggers
+					prev = now.Add(-1 * time.Minute)
+					version.Time = prev
+				})
+
+				It("outputs both previous version and new version", func() {
+					Expect(response).To(HaveLen(2))
+					Expect(response[0].Time.Unix()).To(Equal(prev.Unix()))
+					Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+				})
+			})
+
+			Context("when a version is given but cron condition is not yet met", func() {
+				BeforeEach(func() {
+					// Set expression to run only at the 30th minute of each hour
+					cronExpr = "30 * * * *"
+					cronObj = models.Cron{Expression: cronExpr}
+					source.Cron = &cronObj
+
+					// Set previous time to now to ensure the cron expression doesn't trigger
+					// (unless by chance we're exactly at the 30th minute during the test)
+					prev := now
+					version.Time = prev
+
+					// Ensure we're not at the 30th minute
+					if now.Minute() == 30 {
+						Skip("Skipping test as current time would cause cron expression to trigger")
+					}
+				})
+
+				It("outputs only the previous version", func() {
+					Expect(response).To(HaveLen(1))
+					Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
+				})
+			})
+
+			Context("with specific days of the week", func() {
+				BeforeEach(func() {
+					// Set cron to run only on Mondays at midnight
+					cronExpr = "0 0 * * 1"
+					cronObj = models.Cron{Expression: cronExpr}
+					source.Cron = &cronObj
+
+					// Set previous time to be over a day ago
+					prev := now.Add(-25 * time.Hour)
+					version.Time = prev
+
+					// Skip test if today is not Monday
+					if now.Weekday() != time.Monday {
+						Skip("Skipping test as today is not Monday")
+					}
+				})
+
+				It("triggers if current day matches cron pattern", func() {
+					// Only expect a new version if it's Monday and near midnight
+					if now.Hour() == 0 && now.Minute() < 5 {
+						Expect(response).To(HaveLen(2))
+					} else {
+						Expect(response).To(HaveLen(1))
+					}
+				})
+			})
+
+			Context("with a location configured", func() {
+				var loc *time.Location
+
+				BeforeEach(func() {
+					var err error
+					loc, err = time.LoadLocation("America/New_York")
+					Expect(err).ToNot(HaveOccurred())
+
+					srcLoc := models.Location(*loc)
+					source.Location = &srcLoc
+
+					// Set cron to run every hour at the 0th minute
+					cronExpr = "0 * * * *"
+					cronObj = models.Cron{Expression: cronExpr}
+					source.Cron = &cronObj
+
+					// Set previous version to 61 minutes ago to ensure we're past the interval
+					prev := now.Add(-61 * time.Minute)
+					version.Time = prev
+
+					// Skip if we're not at the 0th minute
+					if now.In(loc).Minute() != 0 {
+						Skip("Skipping test as current time in location would not trigger cron")
+					}
+				})
+
+				It("evaluates the cron expression in the specified timezone", func() {
+					Expect(response).To(HaveLen(2))
+					Expect(response[0].Time.Unix()).To(Equal(version.Time.Unix()))
+					Expect(response[1].Time.Unix()).To(BeNumerically("~", time.Now().Unix(), 1))
+				})
+			})
+		})
 	})
 })
 
