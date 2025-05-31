@@ -1,7 +1,14 @@
-ARG base_image=ubuntu:latest
+ARG base_image=cgr.dev/chainguard/wolfi-base
 ARG builder_image=concourse/golang-builder
 
-FROM ${builder_image} AS builder
+ARG BUILDPLATFORM
+FROM --platform=${BUILDPLATFORM} ${builder_image} AS builder
+
+ARG TARGETOS
+ARG TARGETARCH
+ENV GOOS=$TARGETOS
+ENV GOARCH=$TARGETARCH
+
 WORKDIR /concourse/time-resource
 COPY go.mod .
 COPY go.sum .
@@ -16,8 +23,8 @@ RUN set -e; for pkg in $(go list ./...); do \
 	done
 
 FROM ${base_image} AS resource
-USER root
 COPY --from=builder /assets /opt/resource
+RUN apk --no-cache add tzdata
 
 FROM resource AS tests
 COPY --from=builder /tests /tests
