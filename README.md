@@ -3,6 +3,10 @@
 Implements a resource that reports new versions on a configured interval. The
 interval can be arbitrarily long.
 
+<a href="https://ci.concourse-ci.org/teams/main/pipelines/resource/jobs/build?vars.type=%22time%22">
+  <img src="https://ci.concourse-ci.org/api/v1/teams/main/pipelines/resource/jobs/build/badge?vars.type=%22time%22" alt="Build Status">
+</a>
+
 This resource is built to satisfy "trigger this build at least once every 5
 minutes," not "trigger this build on the 10th hour of every Sunday." That
 level of precision is better left to other tools.
