@@ -39,12 +39,13 @@ type CheckRequest struct {
 type CheckResponse []Version
 
 type Source struct {
-	InitialVersion bool       `json:"initial_version"`
-	Interval       *Interval  `json:"interval"`
-	Start          *TimeOfDay `json:"start"`
-	Stop           *TimeOfDay `json:"stop"`
-	Days           []Weekday  `json:"days"`
-	Location       *Location  `json:"location"`
+	InitialVersion bool        `json:"initial_version"`
+	Interval       *Interval   `json:"interval"`
+	Start          *TimeOfDay  `json:"start"`
+	Stop           *TimeOfDay  `json:"stop"`
+	Days           []Weekday   `json:"days"`
+	Location       *Location   `json:"location"`
+	StartAfter     *StartAfter `json:"start_after"`
 }
 
 func (source Source) Validate() error {
@@ -221,4 +222,43 @@ func (x *Weekday) UnmarshalJSON(payload []byte) error {
 
 func (wd Weekday) MarshalJSON() ([]byte, error) {
 	return json.Marshal(time.Weekday(wd).String())
+}
+
+var dateTimeFormats = []string{
+	"2006-01-02T15:04:05",
+	"2006-01-02T15:04",
+	"2006-01-02T15",
+	time.DateOnly,
+	time.DateTime,
+}
+
+type StartAfter time.Time
+
+func (sa *StartAfter) UnmarshalJSON(payload []byte) error {
+	var dateTimeStr string
+
+	err := json.Unmarshal(payload, &dateTimeStr)
+	if err != nil {
+		return err
+	}
+
+	var startAfter time.Time
+	for _, format := range dateTimeFormats {
+		startAfter, err = time.Parse(format, dateTimeStr)
+		if err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		return fmt.Errorf("invalid date format: %s, must be one of: %s", dateTimeStr, strings.Join(dateTimeFormats, ", "))
+	}
+	*sa = StartAfter(startAfter)
+
+	return nil
+}
+
+func (sa StartAfter) MarshalJSON() ([]byte, error) {
+	StartAfterStr := time.Time(sa).Format("2006-01-02T15:04:05")
+	return json.Marshal(StartAfterStr)
 }
