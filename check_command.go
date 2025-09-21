@@ -32,6 +32,7 @@ func (*CheckCommand) Run(request models.CheckRequest) ([]models.Version, error) 
 		Interval:     request.Source.Interval,
 		Days:         request.Source.Days,
 		StartAfter:   request.Source.StartAfter,
+		Cron:         request.Source.Cron,
 	}
 
 	var versions []models.Version
