@@ -592,6 +592,60 @@ var _ = Describe("Check", func() {
 					})
 				})
 			})
+
+			Context("with L modifier (last day of month)", func() {
+				BeforeEach(func() {
+					cronExpr := models.Cron{Expression: "0 9 L * *"}
+					source.Cron = &cronExpr
+					source.InitialVersion = true
+				})
+
+				It("accepts the L modifier expression", func() {
+					// If gronx supports L, we get a version; test validates parsing works
+					// Actual "last day" logic depends on gronx implementation
+					Expect(response).To(HaveLen(1))
+				})
+			})
+
+			Context("with # modifier (nth weekday)", func() {
+				BeforeEach(func() {
+					// Second Monday of the month
+					cronExpr := models.Cron{Expression: "0 7 * * 1#2"}
+					source.Cron = &cronExpr
+					source.InitialVersion = true
+				})
+
+				It("accepts the # modifier expression", func() {
+					// If gronx supports #, we get a version; test validates parsing works
+					Expect(response).To(HaveLen(1))
+				})
+			})
+
+			Context("with W modifier (nearest weekday)", func() {
+				BeforeEach(func() {
+					// Nearest weekday to the 15th
+					cronExpr := models.Cron{Expression: "0 9 15W * *"}
+					source.Cron = &cronExpr
+					source.InitialVersion = true
+				})
+
+				It("accepts the W modifier expression", func() {
+					Expect(response).To(HaveLen(1))
+				})
+			})
+
+			Context("with 5L modifier (last Friday)", func() {
+				BeforeEach(func() {
+					// Last Friday of the month
+					cronExpr := models.Cron{Expression: "0 17 * * 5L"}
+					source.Cron = &cronExpr
+					source.InitialVersion = true
+				})
+
+				It("accepts the 5L modifier expression", func() {
+					Expect(response).To(HaveLen(1))
+				})
+			})
 		})
 
 		Context("when start_after is specified", func() {

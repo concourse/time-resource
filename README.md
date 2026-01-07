@@ -110,7 +110,6 @@ e.g.
 |-------|----------|---------|-------------|
 | Day of Month | `L` | `0 2 L * *` | Last day of month (e.g., 28th/29th/30th/31st) |
 | | `W` | `0 1 15W * *` | Nearest weekday to date (if 15th is Sat, triggers Fri 14th) |
-| | `LW` | `0 2 LW * *` | Last weekday of month |
 | Day of Week | `L` | `0 3 * * 5L` | Last occurrence in month (5L = last Friday) |
 | | `#` | `0 5 * * 1#2` | Nth occurrence in month (1#2 = second Monday) |
 
@@ -413,7 +412,7 @@ jobs:
 
 ### Prerequisites
 
-* golang is *required* - version 1.25.x is tested; earlier versions may also
+* golang is *required* - version 1.22.x is tested; earlier versions may also
   work.
 * docker is *required* - version 25.x is tested; earlier versions may also
   work.
