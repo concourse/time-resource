@@ -86,11 +86,11 @@ to use. For more complex scheduling, the cron configuration provides greater fle
   ```
 
   **Tags:** The following tags are available and are converted to real cron expressions:
-    * `@yearly` or `@annually` - Run once a year (`0 0 1 1 *`)
-    * `@monthly` - Run once a month (`0 0 1 * *`)
-    * `@weekly` - Run once a week (`0 0 * * 0`)
-    * `@daily` - Run once a day (`0 0 * * *`)
-    * `@hourly` - Run once an hour (`0 * * * *`)
+    * `@yearly` or `@annually` - Run once at midnight on Jan 1st (`0 0 1 1 *`)
+    * `@monthly` - Run at midnight on the 1st of every month (`0 0 1 * *`)
+    * `@weekly` - Run at midnight every Sunday (`0 0 * * 0`)
+    * `@daily` - Run at midnight (`0 0 * * *`)
+    * `@hourly` - Run once at the start of the hour (`0 * * * *`)
     * `@5minutes` - Run every 5 minutes (`*/5 * * * *`)
     * `@10minutes` - Run every 10 minutes (`*/10 * * * *`)
     * `@15minutes` - Run every 15 minutes (`*/15 * * * *`)
