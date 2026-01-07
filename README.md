@@ -99,7 +99,7 @@ to use. For more complex scheduling, the cron configuration provides greater fle
 | `@10minutes` | `*/10 * * * *` | Every 10 minutes |
 | `@5minutes` | `*/5 * * * *` | Every 5 minutes |
 
-  e.g.
+e.g.
   ```
   cron: "@daily"  # Run once a day at midnight
   ```
@@ -113,7 +113,6 @@ to use. For more complex scheduling, the cron configuration provides greater fle
 | | `LW` | `0 2 LW * *` | Last weekday of month |
 | Day of Week | `L` | `0 3 * * 5L` | Last occurrence in month (5L = last Friday) |
 | | `#` | `0 5 * * 1#1` | Nth occurrence in month (2#1 = first Monday) |
-  ```
 
   **Note: You cannot use `cron` together with `interval`, `start`, `stop`, or `days`. Use either the cron-based or
   interval-based configuration.**
@@ -168,6 +167,29 @@ to use. For more complex scheduling, the cron configuration provides greater fle
   ```
   start_after: 2023-10-01T00:00:00
   ```
+
+### Differences Between `interval` and `cron`
+
+There is a difference between `interval` and `cron` when trying to create similar schedules. `interval` will trigger regardless of calendar boundaries, while `cron` will trigger strictly following calendar boundaries. Let's look at an example.
+
+If we want something to run "every 2 days" you can do that in these two ways:
+
+* `interval: 48h` or
+* `cron: "0 0 */2 * *"`
+
+When these configurations trigger are very different.
+
+The `interval` configuration will trigger every 48 hours based on when the last trigger ran.
+
+The `cron` configuration will trigger every 2 calendar days at midnight. Cron also calculates "every 2 days" to be the 1st of each month and then every 2 days from then. So this cron schedule will trigger on the 1st, 3rd, 5th, 7th, etc. of every month. This also means if you're in a month with a 31st day, the resource will emit a version on the 31st and then again on the 1st of the next month, resulting in a trigger two days in a row.
+
+A similar convention is followed with minutes and hours. When trying to schedule cron intervals like "every x minute/hour", cron will actually trigger "every x minute/hour of the hour/day". For example:
+
+* `*/5 * * * *` "Every 5 minutes" is actually "every 5th minute of the hour" (00, 05, 10, 15, etc.)
+* `0 */6 * * *` "Every 6 hours" is actually "every 6th hour of the day" (00, 06, 12, 18)
+
+**Recommendation:** If you want true elapsed-time intervals (e.g., "every 48 hours from the last run"), use `interval`. If you want calendar-aligned schedules (e.g., "at midnight on specific days"), use `cron`.
+
 ## Behavior
 
 ### `check`: Produce timestamps satisfying the interval or cron schedule.
