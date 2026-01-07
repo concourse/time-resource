@@ -706,7 +706,7 @@ var _ = Describe("DescribeCron", func() {
 	})
 
 	It("describes every-2-days with edge case warning", func() {
-		Expect(resource.DescribeCron("0 0 */2 * *")).To(Equal("triggers every 2 calendar days (1st, 3rd, 5th... of each month; note: 31st then 1st = back-to-back triggers), at 00:00"))
+		Expect(resource.DescribeCron("0 0 */2 * *")).To(Equal("triggers every 2 days from 1st of month, at 00:00; note: 31st then 1st = back-to-back triggers"))
 	})
 
 	It("describes specific times", func() {

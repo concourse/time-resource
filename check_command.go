@@ -47,10 +47,16 @@ func DescribeCron(expr string) string {
 	// Day-of-month with step
 	if strings.HasPrefix(dom, "*/") {
 		step := strings.TrimPrefix(dom, "*/")
-		if step == "2" {
-			parts = append(parts, "every 2 calendar days (1st, 3rd, 5th... of each month; note: 31st then 1st = back-to-back triggers)")
-		} else {
-			parts = append(parts, fmt.Sprintf("every %s days from the 1st of each month", step))
+		parts = append(parts, fmt.Sprintf("every %s days from 1st of month", step))
+		// Check if step can land on day 31 (causes back-to-back with 1st)
+		stepNum, err := strconv.Atoi(step)
+		if err == nil && stepNum > 0 {
+			for day := 1; day <= 31; day += stepNum {
+				if day == 31 {
+					warnings = append(warnings, "note: 31st then 1st = back-to-back triggers")
+					break
+				}
+			}
 		}
 	} else if dom != "*" && dom != "?" {
 		parts = append(parts, "on day "+dom+" of the month")
