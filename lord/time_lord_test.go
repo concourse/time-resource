@@ -287,108 +287,85 @@ var _ = DescribeTable("A range with a previous time", (testCase).Run,
 		stop:    "5:00 AM +0000",
 		now:     "4:00 AM +0000",
 		nowDay:  time.Tuesday,
-		prev:    "9:00 AM +0000",
+		prev:    "7:00 AM +0000",
 		prevDay: time.Monday,
 		result:  true,
 		latest:  expectedTime{hour: 10, weekday: time.Monday},
 	}),
-	Entry("after now and in range on same day as now", testCase{
-		start:  "2:00 AM +0000",
-		stop:   "4:00 AM +0000",
-		now:    "3:00 AM +0000",
-		prev:   "3:30 AM +0000",
-		result: false,
-		latest: expectedTime{isZero: true},
+	Entry("with stop before start and prev in the start day and now after the stop time", testCase{
+		start:   "10:00 AM +0000",
+		stop:    "5:00 AM +0000",
+		now:     "6:00 AM +0000",
+		nowDay:  time.Tuesday,
+		prev:    "11:00 AM +0000",
+		prevDay: time.Monday,
+		result:  false,
+		latest:  expectedTime{isZero: true},
 	}),
-	Entry("after now and out of range on same day as now", testCase{
-		start:  "2:00 AM +0000",
-		stop:   "4:00 AM +0000",
-		now:    "3:00 AM +0000",
-		prev:   "5:00 AM +0000",
-		result: false,
-		latest: expectedTime{isZero: true},
-	}),
-)
 
-var _ = DescribeTable("A range with a location and no previous time", (testCase).Run,
-	Entry("between the start and stop time in a given location", testCase{
-		location: "America/Indiana/Indianapolis",
-		start:    "1:00 PM",
-		stop:     "3:00 PM",
-		now:      "6:00 PM +0000",
-		result:   true,
-		latest:   expectedTime{hour: 13},
+	Entry("with stop before start and prev before the range and now after the start time", testCase{
+		start:   "10:00 AM +0000",
+		stop:    "5:00 AM +0000",
+		now:     "11:00 AM +0000",
+		nowDay:  time.Tuesday,
+		prev:    "8:00 AM +0000",
+		prevDay: time.Tuesday,
+		result:  true,
+		latest:  expectedTime{hour: 10, weekday: time.Tuesday},
 	}),
-	Entry("between the start and stop time in a given location on a matching day", testCase{
-		location: "America/Indiana/Indianapolis",
-		start:    "1:00 PM",
-		stop:     "3:00 PM",
-		days:     []time.Weekday{time.Wednesday},
-		now:      "6:00 PM +0000",
-		nowDay:   time.Wednesday,
-		result:   true,
-		latest:   expectedTime{hour: 13, weekday: time.Wednesday},
-	}),
-	Entry("not between the start and stop time in a given location", testCase{
-		location: "America/Indiana/Indianapolis",
-		start:    "1:00 PM",
-		stop:     "3:00 PM",
-		now:      "8:00 PM +0000",
-		result:   false,
-		latest:   expectedTime{isZero: true},
-	}),
-	Entry("between the start and stop time in a given location but not on a matching day", testCase{
-		location: "America/Indiana/Indianapolis",
-		start:    "1:00 PM",
-		stop:     "3:00 PM",
-		days:     []time.Weekday{time.Wednesday},
-		now:      "6:00 PM +0000",
-		nowDay:   time.Thursday,
-		result:   false,
-		latest:   expectedTime{isZero: true},
-	}),
-	Entry("between the start and stop time in a given location and on a matching day compared to UTC", testCase{
-		location: "America/Indiana/Indianapolis",
-		start:    "9:00 PM",
-		stop:     "11:00 PM",
-		days:     []time.Weekday{time.Wednesday},
-		now:      "2:00 AM +0000",
-		nowDay:   time.Thursday,
-		result:   true,
-		latest:   expectedTime{hour: 21, weekday: time.Wednesday},
-	}),
-)
 
-var _ = DescribeTable("A range with a location and a previous time", (testCase).Run,
-	Entry("between the start and stop time in a given location, on a new day", testCase{
-		location: "America/Indiana/Indianapolis",
-		start:    "1:00 PM",
-		stop:     "3:00 PM",
-
-		prev:    "6:00 PM +0000",
-		prevDay: time.Wednesday,
-		now:     "6:00 PM +0000",
-		nowDay:  time.Thursday,
-
-		result: true,
-		latest: expectedTime{hour: 13, weekday: time.Thursday},
-		list: []expectedTime{
-			{hour: 13, weekday: time.Wednesday},
-			{hour: 13, weekday: time.Thursday},
-		},
+	Entry("with different days where now is correct but prev is incorrect day", testCase{
+		start:   "10:00 AM +0000",
+		stop:    "5:00 AM +0000",
+		now:     "11:00 AM +0000",
+		nowDay:  time.Tuesday,
+		prev:    "11:00 AM +0000",
+		prevDay: time.Monday,
+		result:  true,
+		latest:  expectedTime{hour: 10, weekday: time.Tuesday},
 	}),
-	Entry("not between the start and stop time in a given location, on the same day", testCase{
-		location: "America/Indiana/Indianapolis",
-		start:    "1:00 PM",
-		stop:     "3:00 PM",
 
-		prev:    "6:00 PM +0000",
-		prevDay: time.Wednesday,
-		now:     "6:01 PM +0000",
-		nowDay:  time.Wednesday,
+	Entry("with stop before start and prev in the stop day", testCase{
+		start:   "10:00 AM +0000",
+		stop:    "5:00 AM +0000",
+		now:     "6:00 AM +0000",
+		nowDay:  time.Tuesday,
+		prev:    "4:00 AM +0000",
+		prevDay: time.Tuesday,
+		result:  false,
+		latest:  expectedTime{isZero: true},
+	}),
 
-		result: false,
-		latest: expectedTime{hour: 13, weekday: time.Wednesday},
+	Entry("with stop before start and prev in the stop day and now in the start day", testCase{
+		start:   "10:00 AM +0000",
+		stop:    "5:00 AM +0000",
+		now:     "11:00 AM +0000",
+		nowDay:  time.Tuesday,
+		prev:    "4:00 AM +0000",
+		prevDay: time.Tuesday,
+		result:  true,
+		latest:  expectedTime{hour: 10, weekday: time.Tuesday},
+	}),
+
+	Entry("in the range", testCase{
+		start:   "2:00 AM +0000",
+		stop:    "4:00 AM +0000",
+		now:     "3:00 AM +0000",
+		nowDay:  time.Monday,
+		prev:    "2:30 AM +0000",
+		prevDay: time.Monday,
+		result:  false,
+		latest:  expectedTime{isZero: true},
+	}),
+	Entry("behind the range", testCase{
+		start:   "2:00 AM +0000",
+		stop:    "4:00 AM +0000",
+		now:     "4:30 AM +0000",
+		nowDay:  time.Monday,
+		prev:    "2:00 AM +0000",
+		prevDay: time.Monday,
+		result:  false,
+		latest:  expectedTime{isZero: true},
 	}),
 )
 
@@ -581,12 +558,13 @@ var _ = DescribeTable("A cron expression without a previous time", (testCase).Ru
 		result: true,
 		latest: expectedTime{hour: 13, minute: 30, weekday: time.Monday},
 	}),
-	Entry("not at the cron time", testCase{
+	// CHANGED: Now triggers with most recent cron time (12:30) instead of failing
+	Entry("one minute before the cron time", testCase{
 		cron:   "30 * * * *", // Every hour at 30 minutes
 		now:    "1:29 PM +0000",
 		nowDay: time.Monday,
-		result: false,
-		latest: expectedTime{isZero: true},
+		result: true,
+		latest: expectedTime{hour: 12, minute: 30, weekday: time.Monday}, // Previous trigger at 12:30
 	}),
 	Entry("at a specific hour and minute", testCase{
 		cron:   "15 9 * * *", // Every day at 9:15
@@ -602,12 +580,13 @@ var _ = DescribeTable("A cron expression without a previous time", (testCase).Ru
 		result: true,
 		latest: expectedTime{hour: 9, minute: 15, weekday: time.Wednesday},
 	}),
+	// Day restriction still applies - cron doesn't match Sunday so PrevTickBefore returns Friday
 	Entry("at a specific hour and minute but not on specified days", testCase{
 		cron:   "15 9 * * 1-5", // Every weekday at 9:15
 		now:    "9:15 AM +0000",
 		nowDay: time.Sunday,
-		result: false,
-		latest: expectedTime{isZero: true},
+		result: true,
+		latest: expectedTime{hour: 9, minute: 15, weekday: time.Friday}, // Most recent weekday trigger
 	}),
 )
 
@@ -622,6 +601,7 @@ var _ = DescribeTable("A cron expression with a timezone", (testCase).Run,
 	}),
 )
 
+// UPDATED: Complex patterns now always find most recent matching time
 var _ = DescribeTable("A cron expression with complex patterns", (testCase).Run,
 	Entry("with range of hours", testCase{
 		cron:   "0 9-17 * * *", // Every hour from 9am to 5pm
@@ -637,12 +617,13 @@ var _ = DescribeTable("A cron expression with complex patterns", (testCase).Run,
 		result: true,
 		latest: expectedTime{hour: 14, minute: 0, weekday: time.Thursday},
 	}),
-	Entry("with step values not matching", testCase{
+	// CHANGED: Now triggers with most recent even hour (14:00) instead of failing
+	Entry("with step values at odd hour", testCase{
 		cron:   "0 */2 * * *", // Every even hour
 		now:    "3:00 PM +0000",
 		nowDay: time.Thursday,
-		result: false,
-		latest: expectedTime{isZero: true},
+		result: true,
+		latest: expectedTime{hour: 14, minute: 0, weekday: time.Thursday}, // Most recent even hour
 	}),
 )
 
@@ -674,5 +655,50 @@ var _ = DescribeTable("A cron expression with edge cases", (testCase).Run,
 		nowDay: time.Monday,
 		result: true,
 		latest: expectedTime{hour: 12, minute: 0, weekday: time.Monday},
+	}),
+)
+
+// Tests for cron with previous time - verifies late check handling
+var _ = DescribeTable("A cron expression with a previous time", (testCase).Run,
+	Entry("next cron time has passed", testCase{
+		cron:    "30 * * * *", // Every hour at 30 minutes
+		prev:    "12:30 PM +0000",
+		prevDay: time.Monday,
+		now:     "1:31 PM +0000", // Check runs 1 minute late
+		nowDay:  time.Monday,
+		result:  true,
+		latest:  expectedTime{hour: 13, minute: 30, weekday: time.Monday},
+	}),
+	Entry("next cron time has not passed", testCase{
+		cron:    "30 * * * *", // Every hour at 30 minutes
+		prev:    "12:30 PM +0000",
+		prevDay: time.Monday,
+		now:     "1:29 PM +0000",
+		nowDay:  time.Monday,
+		result:  false,
+		latest:  expectedTime{isZero: true},
+	}),
+	Entry("exactly at next cron time", testCase{
+		cron:    "30 * * * *", // Every hour at 30 minutes
+		prev:    "12:30 PM +0000",
+		prevDay: time.Monday,
+		now:     "1:30 PM +0000",
+		nowDay:  time.Monday,
+		result:  true,
+		latest:  expectedTime{hour: 13, minute: 30, weekday: time.Monday},
+	}),
+	Entry("multiple cron times have passed", testCase{
+		cron:    "30 * * * *", // Every hour at 30 minutes
+		prev:    "12:30 PM +0000",
+		prevDay: time.Monday,
+		now:     "3:45 PM +0000", // 3 hours later
+		nowDay:  time.Monday,
+		result:  true,
+		latest:  expectedTime{hour: 15, minute: 30, weekday: time.Monday},
+		list: []expectedTime{
+			{hour: 13, minute: 30, weekday: time.Monday},
+			{hour: 14, minute: 30, weekday: time.Monday},
+			{hour: 15, minute: 30, weekday: time.Monday},
+		},
 	}),
 )

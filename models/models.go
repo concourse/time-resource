@@ -372,7 +372,7 @@ func (c *Cron) NextN(after time.Time, before time.Time, n int) []time.Time {
 		return nil
 	}
 
-	for len(times) < n && next.Before(before) {
+	for len(times) < n && !next.After(before) {
 		times = append(times, next)
 		next, err = c.Next(next)
 		if err != nil {

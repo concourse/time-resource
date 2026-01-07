@@ -40,12 +40,35 @@ func (*CheckCommand) Run(request models.CheckRequest) ([]models.Version, error) 
 	if !previousTime.IsZero() {
 		versions = append(versions, models.Version{Time: previousTime})
 	} else if request.Source.InitialVersion {
-		versions = append(versions, models.Version{Time: currentTime})
+		// For cron with initial_version, use the cron boundary time for consistency.
+		// For non-cron, use currentTime (original behavior).
+		versionTime := currentTime
+		if request.Source.Cron != nil {
+			cronTime := tl.Latest(currentTime)
+			if !cronTime.IsZero() {
+				versionTime = cronTime
+			}
+		}
+		versions = append(versions, models.Version{Time: versionTime})
 		return versions, nil
 	}
 
 	if tl.Check(currentTime) {
-		versions = append(versions, models.Version{Time: currentTime})
+		var versionTime time.Time
+
+		// For cron expressions, use the actual scheduled cron time
+		// instead of the check time. This ensures versions are at cron boundaries.
+		// Example: cron @5minutes, check at 3:07pm → version time = 3:05pm
+		if request.Source.Cron != nil {
+			versionTime = tl.Latest(currentTime)
+		}
+
+		// For non-cron (interval, start/stop ranges), use currentTime
+		if versionTime.IsZero() {
+			versionTime = currentTime
+		}
+
+		versions = append(versions, models.Version{Time: versionTime})
 	}
 
 	return versions, nil
