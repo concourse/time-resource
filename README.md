@@ -85,30 +85,34 @@ to use. For more complex scheduling, the cron configuration provides greater fle
   cron: "0 * * * *"  # Every hour at minute 0
   ```
 
-  **Tags:** The following tags are available and are converted to real cron expressions:
-    * `@yearly` or `@annually` - Run once at midnight on Jan 1st (`0 0 1 1 *`)
-    * `@monthly` - Run at midnight on the 1st of every month (`0 0 1 * *`)
-    * `@weekly` - Run at midnight every Sunday (`0 0 * * 0`)
-    * `@daily` - Run at midnight (`0 0 * * *`)
-    * `@hourly` - Run once at the start of the hour (`0 * * * *`)
-    * `@5minutes` - Run every 5 minutes (`*/5 * * * *`)
-    * `@10minutes` - Run every 10 minutes (`*/10 * * * *`)
-    * `@15minutes` - Run every 15 minutes (`*/15 * * * *`)
-    * `@30minutes` - Run every 30 minutes (`*/30 * * * *`)
+**Tags:** Shorthand aliases for common schedules:
+
+| Tag | Expression | Schedule |
+|-----|------------|----------|
+| `@yearly` / `@annually` | `0 0 1 1 *` | Midnight, Jan 1st |
+| `@monthly` | `0 0 1 * *` | Midnight, 1st of month |
+| `@weekly` | `0 0 * * 0` | Midnight, Sunday |
+| `@daily` | `0 0 * * *` | Midnight |
+| `@hourly` | `0 * * * *` | Start of every hour |
+| `@30minutes` | `0,30 * * * *` | Every 30 minutes (:00, :30) |
+| `@15minutes` | `*/15 * * * *` | Every 15 minutes |
+| `@10minutes` | `*/10 * * * *` | Every 10 minutes |
+| `@5minutes` | `*/5 * * * *` | Every 5 minutes |
 
   e.g.
   ```
   cron: "@daily"  # Run once a day at midnight
   ```
 
-  **Modifiers:** The following special modifiers are supported:
-    * *Day of Month (3rd segment in 5-field format):*
-        * `L` - Last day of month (e.g., `L` could mean 29th for February in leap year)
-        * `W` - Closest weekday (MON-FRI) to the given day (e.g., `10W` is closest weekday to the 10th date)
-    * *Day of Week (5th segment in 5-field format):*
-        * `L` - Last specified day of week in the month (e.g., `2L` is last Tuesday)
-        * `#` - Nth day of week in the month (e.g., `1#2` is second Monday)
+**Modifiers:** Special modifiers for complex scheduling:
 
+| Field | Modifier | Example | Description |
+|-------|----------|---------|-------------|
+| Day of Month | `L` | `0 2 L * *` | Last day of month (e.g., 28th/29th/30th/31st) |
+| | `W` | `0 1 15W * *` | Nearest weekday to date (if 15th is Sat → Fri 14th) |
+| | `LW` | `0 2 LW * *` | Last weekday of month |
+| Day of Week | `L` | `0 3 * * 5L` | Last occurrence in month (5L = last Friday) |
+| | `#` | `0 5 * * 2#1` | Nth occurrence in month (2#1 = first Tuesday) |
   e.g.
   ```
   cron: "0 0 L * *"  # Run at midnight on the last day of each month
@@ -116,6 +120,9 @@ to use. For more complex scheduling, the cron configuration provides greater fle
 
   **Note: You cannot use `cron` together with `interval`, `start`, `stop`, or `days`. Use either the cron-based or
   interval-based configuration.**
+
+* `location`: *Optional. Default `UTC`.* When used with `cron`, the cron schedule is evaluated in this timezone.  
+  See interval-based configuration above for format details.
 
 ### Common Configuration Options
 
