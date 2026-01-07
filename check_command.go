@@ -37,6 +37,7 @@ func DescribeCron(expr string) string {
 
 	minute, hour, dom, month, dow := fields[0], fields[1], fields[2], fields[3], fields[4]
 	var parts []string
+	var warnings []string
 
 	// Day-of-week
 	if dow != "*" && dow != "?" {
@@ -53,6 +54,19 @@ func DescribeCron(expr string) string {
 		}
 	} else if dom != "*" && dom != "?" {
 		parts = append(parts, "on day "+dom+" of the month")
+		// Warn about days that don't exist in all months
+		if dom == "31" {
+			warnings = append(warnings, "note: only triggers in months with 31 days (Jan, Mar, May, Jul, Aug, Oct, Dec)")
+		} else if dom == "30" {
+			warnings = append(warnings, "note: skips February")
+		} else if dom == "29" {
+			warnings = append(warnings, "note: only triggers in leap years for February")
+		}
+	}
+
+	// DOM + DOW = OR logic warning
+	if dom != "*" && dom != "?" && dow != "*" && dow != "?" {
+		warnings = append(warnings, "note: day-of-month AND day-of-week uses OR logic, not AND (triggers on EITHER match)")
 	}
 
 	// Month
@@ -66,11 +80,23 @@ func DescribeCron(expr string) string {
 		parts = append(parts, timeDesc)
 	}
 
+	// DST warning for specific hours
+	if hour != "*" && !strings.Contains(hour, "/") && !strings.Contains(hour, ",") {
+		h, err := strconv.Atoi(hour)
+		if err == nil && h >= 1 && h <= 3 {
+			warnings = append(warnings, "note: may skip or double-trigger during DST transitions")
+		}
+	}
+
 	if len(parts) == 0 {
 		return fmt.Sprintf("schedule: %s", expr)
 	}
 
-	return "triggers " + strings.Join(parts, ", ")
+	result := "triggers " + strings.Join(parts, ", ")
+	if len(warnings) > 0 {
+		result += "; " + strings.Join(warnings, "; ")
+	}
+	return result
 }
 
 func describeTime(minute, hour string) string {

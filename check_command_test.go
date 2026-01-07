@@ -706,12 +706,23 @@ var _ = Describe("DescribeCron", func() {
 	})
 
 	It("describes every-2-days with edge case warning", func() {
-		Expect(resource.DescribeCron("0 0 */2 * *")).To(ContainSubstring("every 2 calendar days"))
-		Expect(resource.DescribeCron("0 0 */2 * *")).To(ContainSubstring("31st then 1st"))
+		Expect(resource.DescribeCron("0 0 */2 * *")).To(Equal("triggers every 2 calendar days (1st, 3rd, 5th... of each month; note: 31st then 1st = back-to-back triggers), at 00:00"))
 	})
 
 	It("describes specific times", func() {
 		Expect(resource.DescribeCron("30 9 * * *")).To(Equal("triggers at 09:30"))
+	})
+
+	It("warns about day-of-month OR day-of-week logic", func() {
+		Expect(resource.DescribeCron("0 0 15 * 1")).To(Equal("triggers on Monday, on day 15 of the month, at 00:00; note: day-of-month AND day-of-week uses OR logic, not AND (triggers on EITHER match)"))
+	})
+
+	It("warns about short months for day 31", func() {
+		Expect(resource.DescribeCron("0 0 31 * *")).To(Equal("triggers on day 31 of the month, at 00:00; note: only triggers in months with 31 days (Jan, Mar, May, Jul, Aug, Oct, Dec)"))
+	})
+
+	It("warns about DST for early morning hours", func() {
+		Expect(resource.DescribeCron("0 2 * * *")).To(Equal("triggers at 02:00; note: may skip or double-trigger during DST transitions"))
 	})
 })
 
