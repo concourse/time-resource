@@ -112,10 +112,7 @@ to use. For more complex scheduling, the cron configuration provides greater fle
 | | `W` | `0 1 15W * *` | Nearest weekday to date (if 15th is Sat → Fri 14th) |
 | | `LW` | `0 2 LW * *` | Last weekday of month |
 | Day of Week | `L` | `0 3 * * 5L` | Last occurrence in month (5L = last Friday) |
-| | `#` | `0 5 * * 2#1` | Nth occurrence in month (2#1 = first Tuesday) |
-  e.g.
-  ```
-  cron: "0 0 L * *"  # Run at midnight on the last day of each month
+| | `#` | `0 5 * * 1#1` | Nth occurrence in month (2#1 = first Monday) |
   ```
 
   **Note: You cannot use `cron` together with `interval`, `start`, `stop`, or `days`. Use either the cron-based or
