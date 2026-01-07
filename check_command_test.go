@@ -695,6 +695,26 @@ var _ = Describe("Check", func() {
 	})
 })
 
+var _ = Describe("DescribeCron", func() {
+	It("describes common macros", func() {
+		Expect(resource.DescribeCron("@daily")).To(Equal("triggers once a day at midnight"))
+		Expect(resource.DescribeCron("@hourly")).To(Equal("triggers at the start of every hour"))
+	})
+
+	It("describes minute intervals", func() {
+		Expect(resource.DescribeCron("*/5 * * * *")).To(Equal("triggers every 5 minutes"))
+	})
+
+	It("describes every-2-days with edge case warning", func() {
+		Expect(resource.DescribeCron("0 0 */2 * *")).To(ContainSubstring("every 2 calendar days"))
+		Expect(resource.DescribeCron("0 0 */2 * *")).To(ContainSubstring("31st then 1st"))
+	})
+
+	It("describes specific times", func() {
+		Expect(resource.DescribeCron("30 9 * * *")).To(Equal("triggers at 09:30"))
+	})
+})
+
 func tod(hours, minutes, offset int) *models.TimeOfDay {
 	loc := time.UTC
 	if offset != 0 {
