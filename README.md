@@ -412,7 +412,7 @@ jobs:
 
 ### Prerequisites
 
-* golang is *required* - version 1.22.x is tested; earlier versions may also
+* golang is *required* - version 1.25.x is tested; earlier versions may also
   work.
 * docker is *required* - version 25.x is tested; earlier versions may also
   work.
