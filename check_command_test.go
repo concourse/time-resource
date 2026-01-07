@@ -524,15 +524,34 @@ var _ = Describe("Check", func() {
 					source.Cron = &cronExpr
 				})
 
-				It("outputs a version at the most recent cron boundary", func() {
-					// With the fix, cron always emits an initial version based on
-					// the most recent time the cron expression would have triggered
-					Expect(response).To(HaveLen(1))
-					// Version should be at a 5-minute boundary
-					Expect(response[0].Time.Minute() % 5).To(Equal(0))
-					Expect(response[0].Time.Second()).To(Equal(0))
-					// And should be in the past or present
-					Expect(response[0].Time.Unix()).To(BeNumerically("<=", time.Now().Unix()))
+				Context("when no version is given", func() {
+					BeforeEach(func() {
+						cronExpr := models.Cron{Expression: "*/5 * * * *"}
+						source.Cron = &cronExpr
+					})
+
+					It("does not output any versions", func() {
+						// With initial_version:false (default), cron does not emit
+						// a version on first check - waits for explicit trigger
+						Expect(response).To(BeEmpty())
+					})
+				})
+
+				Context("when no version is given and initial_version is true", func() {
+					BeforeEach(func() {
+						cronExpr := models.Cron{Expression: "*/5 * * * *"}
+						source.Cron = &cronExpr
+						source.InitialVersion = true
+					})
+
+					It("outputs a version at the most recent cron boundary", func() {
+						Expect(response).To(HaveLen(1))
+						// Version should be at a 5-minute boundary
+						Expect(response[0].Time.Minute() % 5).To(Equal(0))
+						Expect(response[0].Time.Second()).To(Equal(0))
+						// And should be in the past or present
+						Expect(response[0].Time.Unix()).To(BeNumerically("<=", time.Now().Unix()))
+					})
 				})
 			})
 

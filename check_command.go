@@ -51,6 +51,10 @@ func (*CheckCommand) Run(request models.CheckRequest) ([]models.Version, error) 
 		}
 		versions = append(versions, models.Version{Time: versionTime})
 		return versions, nil
+	} else if request.Source.Cron != nil {
+		// Cron with initial_version:false (or unset) and no previous version:
+		// don't emit any version until after the first cron trigger is observed.
+		return versions, nil
 	}
 
 	if tl.Check(currentTime) {
