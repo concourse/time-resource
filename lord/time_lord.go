@@ -30,7 +30,7 @@ func (tl TimeLord) Check(now time.Time) bool {
 			startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
 				startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
 
-			if !startInLoc.Before(now) {
+			if !startInLoc.Before(nowInLoc) {
 				return false
 			}
 		}
@@ -98,6 +98,16 @@ func (tl TimeLord) Latest(reference time.Time) time.Time {
 	if tl.Cron != nil {
 		refInLoc := reference.In(tl.loc())
 
+		if tl.StartAfter != nil {
+			startAfter := time.Time(*tl.StartAfter)
+			startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
+				startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
+
+			if !startInLoc.Before(refInLoc) {
+				return time.Time{}
+			}
+		}
+
 		if tl.PreviousTime.IsZero() {
 			// Return the most recent scheduled cron time <= reference
 			prevTick, err := gronx.PrevTickBefore(tl.Cron.Expression, refInLoc, true)
@@ -161,6 +171,16 @@ func (tl TimeLord) Latest(reference time.Time) time.Time {
 func (tl TimeLord) List(reference time.Time) []time.Time {
 	if tl.Cron != nil {
 		refInLoc := reference.In(tl.loc())
+
+		if tl.StartAfter != nil {
+			startAfter := time.Time(*tl.StartAfter)
+			startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
+				startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
+
+			if !startInLoc.Before(refInLoc) {
+				return []time.Time{}
+			}
+		}
 
 		if tl.PreviousTime.IsZero() {
 			// Return the most recent scheduled cron time <= reference
@@ -276,7 +296,7 @@ func (tl TimeLord) LatestRangeBefore(reference time.Time) (time.Time, time.Time)
 	refInLoc := reference.In(tl.loc())
 
 	start := time.Date(refInLoc.Year(), refInLoc.Month(), refInLoc.Day(),
-		tlStart.Hour(), tlStart.Minute(), 0, 0, tl.loc())
+		tlStart.Hour(), tlStart.Minute(), tlStart.Second(), 0, tl.loc())
 
 	if start.After(refInLoc) {
 		start = start.AddDate(0, 0, -1)

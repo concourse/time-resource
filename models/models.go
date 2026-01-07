@@ -193,6 +193,10 @@ func (tod TimeOfDay) Minute() int {
 	return int(time.Duration(tod) % time.Hour / time.Minute)
 }
 
+func (t TimeOfDay) Second() int {
+	return int(time.Duration(t).Seconds()) % 60
+}
+
 func (tod TimeOfDay) String() string {
 	return fmt.Sprintf("%d:%02d", tod.Hour(), tod.Minute())
 }
