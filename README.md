@@ -31,7 +31,7 @@ to use. For more complex scheduling, the cron configuration provides greater fle
 
 * `start` and `stop`: *Optional.* Limit the creation of new versions to times
   on/after `start` and before `stop`. The supported formats for the times are:
-  `3:04 PM`, `3PM`, `3PM`, `15:04`, and `1504`. If a `start` is specified, a
+  `3:04 PM`, `3PM`, `3 PM`, `15:04`, and `1504`. If a `start` is specified, a
   `stop` must also be specified, and vice versa. If neither value is specified,
   both values will default to `00:00` and this resource can generate a new
   version (based on `interval`) at any time of day.
@@ -109,13 +109,13 @@ e.g.
 | Field | Modifier | Example | Description |
 |-------|----------|---------|-------------|
 | Day of Month | `L` | `0 2 L * *` | Last day of month (e.g., 28th/29th/30th/31st) |
-| | `W` | `0 1 15W * *` | Nearest weekday to date (if 15th is Sat → Fri 14th) |
+| | `W` | `0 1 15W * *` | Nearest weekday to date (if 15th is Sat, triggers Fri 14th) |
 | | `LW` | `0 2 LW * *` | Last weekday of month |
 | Day of Week | `L` | `0 3 * * 5L` | Last occurrence in month (5L = last Friday) |
-| | `#` | `0 5 * * 1#1` | Nth occurrence in month (2#1 = first Monday) |
+| | `#` | `0 5 * * 1#2` | Nth occurrence in month (1#2 = second Monday) |
 
-  **Note: You cannot use `cron` together with `interval`, `start`, `stop`, or `days`. Use either the cron-based or
-  interval-based configuration.**
+**Note: You cannot use `cron` together with `interval`, `start`, `stop`, or `days`. Use either the cron-based or
+interval-based configuration.**
 
 * `location`: *Optional. Default `UTC`.* When used with `cron`, the cron schedule is evaluated in this timezone.  
   See interval-based configuration above for format details.
@@ -152,15 +152,15 @@ e.g.
   ```
   initial_version: true
   ```
-* `start_after`: *Optional.* Specifies the earliest datetime from which new time-based versions can be created.  
+* `start_after`: *Optional.* Specifies the earliest datetime from which new time-based versions can be created.
 
   Supported formats are `2006-01-02 15:04:05`, `2006-01-02T15:04:05`, `2006-01-02T15:04`, `2006-01-02T15`, `2006-01-02`.
 
   Behavior:
-  - If the `start_after` datetime is specified and is in the future, it will determine when the first version is created.
-  - If the `start_after` datetime is in the past, the resource will continue to generate versions based on the other configuration parameters.
-  - When `initial_version` is set to true, the first version will be created based on the current time. Subsequent versions will only be generated if they fall after the `start_after` datetime.
-  - If a `location` is provided, the `start_after` datetime will be interpreted in the context of the specified timezone, rather than in UTC.
+    - If the `start_after` datetime is specified and is in the future, it will determine when the first version is created.
+    - If the `start_after` datetime is in the past, the resource will continue to generate versions based on the other configuration parameters.
+    - When `initial_version` is set to true, the first version will be created based on the current time. Subsequent versions will only be generated if they fall after the `start_after` datetime.
+    - If a `location` is provided, the `start_after` datetime will be interpreted in the context of the specified timezone, rather than in UTC.
 
   e.g.
 
@@ -177,7 +177,7 @@ If we want something to run "every 2 days" you can do that in these two ways:
 * `interval: 48h` or
 * `cron: "0 0 */2 * *"`
 
-When these configurations trigger are very different.
+When these configurations trigger is very different.
 
 The `interval` configuration will trigger every 48 hours based on when the last trigger ran.
 
@@ -189,6 +189,26 @@ A similar convention is followed with minutes and hours. When trying to schedule
 * `0 */6 * * *` "Every 6 hours" is actually "every 6th hour of the day" (00, 06, 12, 18)
 
 **Recommendation:** If you want true elapsed-time intervals (e.g., "every 48 hours from the last run"), use `interval`. If you want calendar-aligned schedules (e.g., "at midnight on specific days"), use `cron`.
+
+### Cron Diagnostic Output
+
+When a cron-triggered version is emitted, the resource logs a human-readable explanation to stderr:
+
+```
+cron: emitting version at 2025-01-07T00:00:00Z (previous: 2025-01-05T00:00:00Z)
+  triggers every 2 days from 1st of month, at 00:00; note: 31st then 1st = back-to-back triggers
+```
+
+This includes warnings for common cron pitfalls:
+
+| Condition | Warning |
+|-----------|---------|
+| Day step lands on 31st (e.g., `*/2`, `*/3`, `*/5`) | `note: 31st then 1st = back-to-back triggers` |
+| Day 31 specified | `note: only triggers in months with 31 days (Jan, Mar, May, Jul, Aug, Oct, Dec)` |
+| Day 30 specified | `note: skips February` |
+| Day 29 specified | `note: only triggers in leap years for February` |
+| Both day-of-month and day-of-week set | `note: day-of-month AND day-of-week uses OR logic, not AND (triggers on EITHER match)` |
+| Hour 1-3 specified | `note: may skip or double-trigger during DST transitions` |
 
 ## Behavior
 
@@ -253,7 +273,9 @@ jobs:
   - task: build
     config: # ...
 ```
+
 ### Cron trigger using tags
+
 ```yaml
 resources:
 - name: weekly-cleanup
@@ -331,6 +353,7 @@ jobs:
 ```
 
 ### Trigger only on specific days
+
 ```yaml
 resources:
 - name: weekday-mornings
@@ -350,7 +373,9 @@ jobs:
   - task: something
     config: # ...
 ```
+
 ### Cron trigger with modifiers
+
 ```yaml
 resources:
 - name: last-day-of-month
