@@ -41,34 +41,17 @@ func DescribeCron(expr string) string {
 
 	// Day-of-week
 	if dow != "*" && dow != "?" {
-		parts = append(parts, "on "+describeDOW(dow))
+		dowDesc, dowWarnings := describeDOW(dow)
+		parts = append(parts, "on "+dowDesc)
+		warnings = append(warnings, dowWarnings...)
 	}
 
-	// Day-of-month with step
-	if strings.HasPrefix(dom, "*/") {
-		step := strings.TrimPrefix(dom, "*/")
-		parts = append(parts, fmt.Sprintf("every %s days from 1st of month", step))
-		// Check if step can land on day 31 (causes back-to-back with 1st)
-		stepNum, err := strconv.Atoi(step)
-		if err == nil && stepNum > 0 {
-			for day := 1; day <= 31; day += stepNum {
-				if day == 31 {
-					warnings = append(warnings, "note: 31st then 1st = back-to-back triggers")
-					break
-				}
-			}
-		}
-	} else if dom != "*" && dom != "?" {
-		parts = append(parts, "on day "+dom+" of the month")
-		// Warn about days that don't exist in all months
-		if dom == "31" {
-			warnings = append(warnings, "note: only triggers in months with 31 days (Jan, Mar, May, Jul, Aug, Oct, Dec)")
-		} else if dom == "30" {
-			warnings = append(warnings, "note: skips February")
-		} else if dom == "29" {
-			warnings = append(warnings, "note: only triggers in leap years for February")
-		}
+	// Day-of-month
+	domDesc, domWarnings := describeDOM(dom)
+	if domDesc != "" {
+		parts = append(parts, domDesc)
 	}
+	warnings = append(warnings, domWarnings...)
 
 	// DOM + DOW = OR logic warning
 	if dom != "*" && dom != "?" && dow != "*" && dow != "?" {
@@ -139,17 +122,118 @@ func describeTime(minute, hour string) string {
 	return ""
 }
 
-func describeDOW(dow string) string {
+func describeDOW(dow string) (string, []string) {
 	days := map[string]string{
 		"0": "Sunday", "1": "Monday", "2": "Tuesday", "3": "Wednesday",
 		"4": "Thursday", "5": "Friday", "6": "Saturday",
 		"SUN": "Sunday", "MON": "Monday", "TUE": "Tuesday", "WED": "Wednesday",
 		"THU": "Thursday", "FRI": "Friday", "SAT": "Saturday",
 	}
-	if name, ok := days[strings.ToUpper(dow)]; ok {
-		return name
+
+	var warnings []string
+	dowUpper := strings.ToUpper(dow)
+
+	if strings.Contains(dow, "#") {
+		parts := strings.Split(dow, "#")
+		if len(parts) == 2 {
+			dayName := parts[0]
+			if name, ok := days[strings.ToUpper(dayName)]; ok {
+				dayName = name
+			}
+			nth := parts[1]
+			ordinal := toOrdinal(nth)
+			if nth == "5" {
+				warnings = append(warnings, "note: 5th occurrence only exists in some months")
+			}
+			return fmt.Sprintf("%s %s of the month", ordinal, dayName), warnings
+		}
 	}
-	return dow
+
+	if strings.HasSuffix(dowUpper, "L") {
+		dayNum := strings.TrimSuffix(dow, "L")
+		dayNum = strings.TrimSuffix(dayNum, "l")
+		if name, ok := days[dayNum]; ok {
+			return fmt.Sprintf("last %s of the month", name), warnings
+		}
+		return fmt.Sprintf("last %s of the month", dayNum), warnings
+	}
+
+	if name, ok := days[dowUpper]; ok {
+		return name, warnings
+	}
+	return dow, warnings
+}
+
+func toOrdinal(n string) string {
+	num, err := strconv.Atoi(n)
+	if err != nil {
+		return n
+	}
+	suffix := "th"
+	if num%100 < 11 || num%100 > 13 {
+		switch num % 10 {
+		case 1:
+			suffix = "st"
+		case 2:
+			suffix = "nd"
+		case 3:
+			suffix = "rd"
+		}
+	}
+	return fmt.Sprintf("%d%s", num, suffix)
+}
+
+func describeDOM(dom string) (string, []string) {
+	var warnings []string
+
+	if dom == "*" || dom == "?" {
+		return "", warnings
+	}
+
+	if strings.HasPrefix(dom, "*/") {
+		step := strings.TrimPrefix(dom, "*/")
+		desc := fmt.Sprintf("every %s days from 1st of month", step)
+		stepNum, err := strconv.Atoi(step)
+		if err == nil && stepNum > 0 {
+			for day := 1; day <= 31; day += stepNum {
+				if day == 31 {
+					warnings = append(warnings, "note: 31st then 1st = back-to-back triggers")
+					break
+				}
+			}
+		}
+		return desc, warnings
+	}
+
+	domUpper := strings.ToUpper(dom)
+
+	if domUpper == "L" {
+		return "on the last day of the month", warnings
+	}
+
+	if strings.HasSuffix(domUpper, "W") {
+		dayNum := strings.TrimSuffix(dom, "W")
+		dayNum = strings.TrimSuffix(dayNum, "w")
+		desc := fmt.Sprintf("on the nearest weekday to the %s", toOrdinal(dayNum))
+		if dayNum == "31" {
+			warnings = append(warnings, "note: only triggers in months with 31 days")
+		} else if dayNum == "30" {
+			warnings = append(warnings, "note: skips February")
+		} else if dayNum == "29" {
+			warnings = append(warnings, "note: only triggers in leap years for February")
+		}
+		return desc, warnings
+	}
+
+	if dom == "31" {
+		warnings = append(warnings, "note: only triggers in months with 31 days (Jan, Mar, May, Jul, Aug, Oct, Dec)")
+	} else if dom == "30" {
+		warnings = append(warnings, "note: skips February")
+	} else if dom == "29" {
+		warnings = append(warnings, "note: only triggers in leap years for February")
+	}
+
+	return "on day " + dom + " of the month", warnings
 }
 
 func describeMonth(month string) string {
@@ -195,7 +279,7 @@ func (*CheckCommand) Run(request models.CheckRequest) ([]models.Version, error) 
 		versions = append(versions, models.Version{Time: previousTime})
 	} else if request.Source.InitialVersion {
 		// For cron with initial_version, use the cron boundary time for consistency.
-		// For non-cron, use currentTime (original behavior).
+		// For non-cron, use currentTime
 		versionTime := currentTime
 		if request.Source.Cron != nil {
 			cronTime := tl.Latest(currentTime)
