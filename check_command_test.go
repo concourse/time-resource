@@ -821,8 +821,12 @@ var _ = Describe("DescribeCron", func() {
 			Expect(resource.DescribeCron("* * * * *")).To(Equal("schedule: * * * * *"))
 		})
 
-		It("preserves unknown DOW ranges", func() {
-			Expect(resource.DescribeCron("0 9 * * 1-5")).To(Equal("triggers on 1-5, at 09:00"))
+		It("describes DOW ranges 0-2", func() {
+			Expect(resource.DescribeCron("0 9 * * 0-2")).To(Equal("triggers on Sunday through Tuesday, at 09:00"))
+		})
+
+		It("describes DOW ranges 1-5", func() {
+			Expect(resource.DescribeCron("0 9 * * 1-5")).To(Equal("triggers on Monday through Friday, at 09:00"))
 		})
 	})
 })

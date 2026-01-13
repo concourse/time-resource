@@ -158,6 +158,21 @@ func describeDOW(dow string) (string, []string) {
 		return fmt.Sprintf("last %s of the month", dayNum), warnings
 	}
 
+	if strings.Contains(dow, "-") {
+		parts := strings.Split(dow, "-")
+		if len(parts) == 2 {
+			startDay := parts[0]
+			endDay := parts[1]
+			if name, ok := days[strings.ToUpper(startDay)]; ok {
+				startDay = name
+			}
+			if name, ok := days[strings.ToUpper(endDay)]; ok {
+				endDay = name
+			}
+			return fmt.Sprintf("%s through %s", startDay, endDay), warnings
+		}
+	}
+
 	if name, ok := days[dowUpper]; ok {
 		return name, warnings
 	}
