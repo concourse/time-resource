@@ -3,6 +3,7 @@ package lord
 import (
 	"time"
 
+	"github.com/adhocore/gronx"
 	"github.com/concourse/time-resource/models"
 )
 
@@ -16,9 +17,51 @@ type TimeLord struct {
 	Interval     *models.Interval
 	Days         []models.Weekday
 	StartAfter   *models.StartAfter
+	Cron         *models.Cron
 }
 
 func (tl TimeLord) Check(now time.Time) bool {
+	if tl.Cron != nil {
+		nowInLoc := now.In(tl.loc())
+
+		// Check start_after constraint first
+		if tl.StartAfter != nil {
+			startAfter := time.Time(*tl.StartAfter)
+			startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
+				startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
+
+			if !startInLoc.Before(nowInLoc) {
+				return false
+			}
+		}
+
+		if tl.PreviousTime.IsZero() {
+			// No previous version exists.
+			// Find the most recent scheduled cron time <= now.
+			// This ensures the resource emits an initial version even if the check
+			// doesn't run at the exact cron minute.
+			//
+			// Example: @daily, check at 3pm → prevTick = today 00:00 → trigger
+			// Example: @5minutes, check at 3:07pm → prevTick = 3:05pm → trigger
+			prevTick, err := gronx.PrevTickBefore(tl.Cron.Expression, nowInLoc, true)
+			if err != nil {
+				return false
+			}
+			return !prevTick.IsZero()
+		}
+
+		// Previous version exists.
+		// Check if the next scheduled cron time after prevTime has passed.
+		// This handles late checks - if cron is :30 and check runs at :31,
+		// we still trigger because :30 has passed.
+		prevInLoc := tl.PreviousTime.In(tl.loc())
+		nextTime, err := tl.Cron.Next(prevInLoc)
+		if err != nil {
+			return false
+		}
+
+		return !nextTime.IsZero() && !nextTime.After(nowInLoc)
+	}
 
 	start, stop := tl.LatestRangeBefore(now)
 
@@ -31,7 +74,7 @@ func (tl TimeLord) Check(now time.Time) bool {
 		startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
 			startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
 
-		if !startInLoc.Before(now) {
+		if !startInLoc.Before(now.In(tl.loc())) {
 			return false
 		}
 	}
@@ -45,19 +88,62 @@ func (tl TimeLord) Check(now time.Time) bool {
 	}
 
 	if tl.Interval != nil {
-		if now.Sub(tl.PreviousTime) >= time.Duration(*tl.Interval) {
-			return true
-		}
-	} else if !start.IsZero() {
-		return tl.PreviousTime.Before(start)
+		return now.Sub(tl.PreviousTime) >= time.Duration(*tl.Interval)
 	}
 
-	return false
+	return !start.IsZero() && tl.PreviousTime.Before(start)
 }
 
 func (tl TimeLord) Latest(reference time.Time) time.Time {
+	if tl.Cron != nil {
+		refInLoc := reference.In(tl.loc())
+
+		if tl.StartAfter != nil {
+			startAfter := time.Time(*tl.StartAfter)
+			startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
+				startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
+
+			if !startInLoc.Before(refInLoc) {
+				return time.Time{}
+			}
+		}
+
+		if tl.PreviousTime.IsZero() {
+			// Return the most recent scheduled cron time <= reference
+			prevTick, err := gronx.PrevTickBefore(tl.Cron.Expression, refInLoc, true)
+			if err != nil || prevTick.IsZero() {
+				return time.Time{}
+			}
+			return prevTick.UTC()
+		}
+
+		// Find the most recent cron time <= reference
+		// This handles cases where multiple cron times have passed since prev
+		latest, err := gronx.PrevTickBefore(tl.Cron.Expression, refInLoc, true)
+		if err != nil || latest.IsZero() {
+			return time.Time{}
+		}
+
+		// Only return if this is after the previous time (a new trigger)
+		prevInLoc := tl.PreviousTime.In(tl.loc())
+		if latest.After(prevInLoc) {
+			return latest.UTC()
+		}
+
+		return time.Time{}
+	}
+
 	if tl.PreviousTime.After(reference) {
 		return time.Time{}
+	}
+
+	if tl.StartAfter != nil {
+		startAfter := time.Time(*tl.StartAfter)
+		startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
+			startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
+		if !startInLoc.Before(reference.In(tl.loc())) {
+			return time.Time{}
+		}
 	}
 
 	refInLoc := reference.In(tl.loc())
@@ -72,6 +158,10 @@ func (tl TimeLord) Latest(reference time.Time) time.Time {
 	}
 
 	if tl.Interval == nil {
+		// If we're past the stop time, return zero (no new version to emit)
+		if !reference.Before(stop) {
+			return time.Time{}
+		}
 		if tl.PreviousTime.After(start) {
 			return time.Time{}
 		}
@@ -88,10 +178,57 @@ func (tl TimeLord) Latest(reference time.Time) time.Time {
 }
 
 func (tl TimeLord) List(reference time.Time) []time.Time {
+	if tl.Cron != nil {
+		refInLoc := reference.In(tl.loc())
+
+		if tl.StartAfter != nil {
+			startAfter := time.Time(*tl.StartAfter)
+			startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
+				startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
+
+			if !startInLoc.Before(reference.In(tl.loc())) {
+				return []time.Time{}
+			}
+		}
+
+		if tl.PreviousTime.IsZero() {
+			// Return the most recent scheduled cron time <= reference
+			prevTick, err := gronx.PrevTickBefore(tl.Cron.Expression, refInLoc, true)
+			if err != nil || prevTick.IsZero() {
+				return []time.Time{}
+			}
+			return []time.Time{prevTick.UTC()}
+		}
+
+		// Get previous time in local timezone
+		start := tl.PreviousTime.In(tl.loc())
+
+		// Get all occurrences between previous and reference
+		maxOccurrences := 5
+		times := tl.Cron.NextN(start, refInLoc, maxOccurrences)
+
+		// Convert all times back to UTC
+		result := make([]time.Time, len(times))
+		for i, t := range times {
+			result[i] = t.UTC()
+		}
+
+		return result
+	}
+
 	start := tl.PreviousTime
+	versions := []time.Time{}
+
+	if tl.StartAfter != nil {
+		startAfter := time.Time(*tl.StartAfter)
+		startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
+			startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
+		if !startInLoc.Before(reference.In(tl.loc())) {
+			return versions
+		}
+	}
 
 	var addForRange func(time.Time, time.Time)
-	versions := []time.Time{}
 
 	if tl.Interval == nil {
 
@@ -103,7 +240,11 @@ func (tl TimeLord) List(reference time.Time) []time.Time {
 			start = refRangeStart
 		}
 
-		addForRange = func(dailyStart, _ time.Time) {
+		addForRange = func(dailyStart, dailyEnd time.Time) {
+			// Don't add if reference is past the stop time
+			if !reference.Before(dailyEnd) {
+				return
+			}
 			if !dailyStart.Before(start) && !dailyStart.After(reference) {
 				versions = append(versions, dailyStart)
 			}
@@ -173,7 +314,7 @@ func (tl TimeLord) LatestRangeBefore(reference time.Time) (time.Time, time.Time)
 	refInLoc := reference.In(tl.loc())
 
 	start := time.Date(refInLoc.Year(), refInLoc.Month(), refInLoc.Day(),
-		tlStart.Hour(), tlStart.Minute(), 0, 0, tl.loc())
+		tlStart.Hour(), tlStart.Minute(), tlStart.Second(), 0, tl.loc())
 
 	if start.After(refInLoc) {
 		start = start.AddDate(0, 0, -1)
