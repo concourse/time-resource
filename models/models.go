@@ -246,6 +246,8 @@ func (wd Weekday) MarshalJSON() ([]byte, error) {
 }
 
 var dateTimeFormats = []string{
+	time.RFC3339,
+	"2006-01-02T15:04:05-07:00",
 	"2006-01-02T15:04:05",
 	"2006-01-02T15:04",
 	"2006-01-02T15",

@@ -1005,3 +1005,117 @@ var _ = DescribeTable("Only stop time specified", (testCase).Run,
 		latest: expectedTime{isZero: true},
 	}),
 )
+
+var _ = DescribeTable("StartAfter with non-cron configurations", (testCase).Run,
+	// Bug #2 fix: Check() non-cron path with StartAfter
+	Entry("start_after with range, now before start_after", testCase{
+		start:       "9:00 AM +0000",
+		stop:        "5:00 PM +0000",
+		start_after: "2025-01-15T12:00:00",
+		now:         "10:00 AM +0000",
+		nowDay:      time.Wednesday,
+		// now (2018) is before start_after (2025), should not trigger
+		result: false,
+		latest: expectedTime{isZero: true},
+		list:   []expectedTime{},
+	}),
+	Entry("start_after with range, now after start_after", testCase{
+		start:       "9:00 AM +0000",
+		stop:        "5:00 PM +0000",
+		start_after: "2017-01-01T00:00:00",
+		now:         "10:00 AM +0000",
+		nowDay:      time.Wednesday,
+		// now (2018) is after start_after (2017), should trigger
+		result: true,
+		latest: expectedTime{hour: 9, minute: 0, weekday: time.Wednesday},
+	}),
+	Entry("start_after with interval, now before start_after", testCase{
+		interval:    "1h",
+		start:       "9:00 AM +0000",
+		stop:        "5:00 PM +0000",
+		start_after: "2025-01-15T12:00:00",
+		now:         "11:00 AM +0000",
+		nowDay:      time.Wednesday,
+		result:      false,
+		latest:      expectedTime{isZero: true},
+		list:        []expectedTime{},
+	}),
+	Entry("start_after with interval, now after start_after", testCase{
+		interval:    "1h",
+		start:       "9:00 AM +0000",
+		stop:        "5:00 PM +0000",
+		start_after: "2017-01-01T00:00:00",
+		now:         "11:00 AM +0000",
+		nowDay:      time.Wednesday,
+		result:      true,
+		latest:      expectedTime{hour: 11, minute: 0, weekday: time.Wednesday},
+	}),
+
+	// Bug #2 fix: timezone handling in non-cron StartAfter check
+	Entry("start_after with location, boundary test", testCase{
+		location:    "America/New_York",
+		start:       "9:00 AM",
+		stop:        "5:00 PM",
+		start_after: "2018-01-03T10:00:00", // interpreted as 10:00 AM New York
+		now:         "3:00 PM +0000",       // 10:00 AM New York
+		nowDay:      time.Wednesday,
+		// now equals start_after, should not trigger (needs to be strictly after)
+		result: false,
+		latest: expectedTime{isZero: true},
+		list:   []expectedTime{},
+	}),
+	Entry("start_after with location, one minute after", testCase{
+		location:    "America/New_York",
+		start:       "9:00 AM",
+		stop:        "5:00 PM",
+		start_after: "2018-01-03T10:00:00",
+		now:         "3:01 PM +0000",
+		nowDay:      time.Wednesday,
+		result:      true,
+		latest:      expectedTime{hour: 9, minute: 0, weekday: time.Wednesday}, // local hour, not UTC
+	}),
+
+	// With previous time
+	Entry("start_after with range and prev, now after start_after", testCase{
+		start:       "9:00 AM +0000",
+		stop:        "5:00 PM +0000",
+		start_after: "2017-01-01T00:00:00",
+		prev:        "8:00 AM +0000",
+		prevDay:     time.Tuesday,
+		now:         "10:00 AM +0000",
+		nowDay:      time.Wednesday,
+		result:      true,
+		latest:      expectedTime{hour: 9, minute: 0, weekday: time.Wednesday},
+	}),
+	Entry("start_after with range and prev, now before start_after", testCase{
+		start:       "9:00 AM +0000",
+		stop:        "5:00 PM +0000",
+		start_after: "2025-01-15T12:00:00",
+		prev:        "8:00 AM +0000",
+		prevDay:     time.Tuesday,
+		now:         "10:00 AM +0000",
+		nowDay:      time.Wednesday,
+		result:      false,
+		latest:      expectedTime{isZero: true},
+		list:        []expectedTime{},
+	}),
+)
+
+var _ = DescribeTable("StartAfter edge cases", (testCase).Run,
+	// start_after alone (no range, no interval, no cron)
+	Entry("start_after only, now before", testCase{
+		start_after: "2025-01-15T00:00:00",
+		now:         "10:00 AM +0000",
+		nowDay:      time.Wednesday,
+		result:      false,
+		latest:      expectedTime{isZero: true},
+		list:        []expectedTime{},
+	}),
+	Entry("start_after only, now after", testCase{
+		start_after: "2017-01-01T00:00:00",
+		now:         "10:00 AM +0000",
+		nowDay:      time.Wednesday,
+		result:      true,
+		latest:      expectedTime{hour: 0, minute: 0, weekday: time.Wednesday},
+	}),
+)

@@ -74,7 +74,7 @@ func (tl TimeLord) Check(now time.Time) bool {
 		startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
 			startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
 
-		if !startInLoc.Before(now) {
+		if !startInLoc.Before(now.In(tl.loc())) {
 			return false
 		}
 	}
@@ -137,6 +137,15 @@ func (tl TimeLord) Latest(reference time.Time) time.Time {
 		return time.Time{}
 	}
 
+	if tl.StartAfter != nil {
+		startAfter := time.Time(*tl.StartAfter)
+		startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
+			startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
+		if !startInLoc.Before(reference.In(tl.loc())) {
+			return time.Time{}
+		}
+	}
+
 	refInLoc := reference.In(tl.loc())
 	for !tl.daysMatch(refInLoc) {
 		refInLoc = refInLoc.AddDate(0, 0, -1)
@@ -177,7 +186,7 @@ func (tl TimeLord) List(reference time.Time) []time.Time {
 			startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
 				startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
 
-			if !startInLoc.Before(refInLoc) {
+			if !startInLoc.Before(reference.In(tl.loc())) {
 				return []time.Time{}
 			}
 		}
@@ -209,6 +218,15 @@ func (tl TimeLord) List(reference time.Time) []time.Time {
 
 	start := tl.PreviousTime
 	versions := []time.Time{}
+
+	if tl.StartAfter != nil {
+		startAfter := time.Time(*tl.StartAfter)
+		startInLoc := time.Date(startAfter.Year(), startAfter.Month(), startAfter.Day(),
+			startAfter.Hour(), startAfter.Minute(), startAfter.Second(), 0, tl.loc())
+		if !startInLoc.Before(reference.In(tl.loc())) {
+			return versions
+		}
+	}
 
 	var addForRange func(time.Time, time.Time)
 
